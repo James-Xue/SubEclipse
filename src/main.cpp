@@ -1,7 +1,9 @@
 #include "subeclipse/config.h"
 #include "subeclipse/logger.h"
+#include "subeclipse/overlay_window.h"
+#include "subeclipse/roi.h"
 
-#include <X11/Xlib.h>
+#include <X11/keysym.h>
 
 #include <chrono>
 #include <thread>
@@ -13,69 +15,115 @@ int main()
     const AppConfig config = load_config("configs/default.json");
     Logger::set_level(Logger::parse_level(config.log_level));
 
-    Display *display = XOpenDisplay(nullptr);
-    if (display == nullptr)
+    OverlayWindow overlay;
+    if (!overlay.create(config.window_width, config.window_height, "SubEclipse Overlay"))
     {
-        Logger::error("Failed to open X11 display");
         return 1;
     }
 
-    const int screen = DefaultScreen(display);
-    Window window = XCreateSimpleWindow(
-        display,
-        RootWindow(display, screen),
-        50,
-        50,
-        static_cast<unsigned int>(config.window_width),
-        static_cast<unsigned int>(config.window_height),
-        1,
-        BlackPixel(display, screen),
-        WhitePixel(display, screen));
+    RoiEditor roi;
+    bool running = false;
+    bool need_redraw = true;
+    bool should_exit = false;
 
-    if (window == 0)
+    auto enter_edit_mode = [&]()
     {
-        Logger::error("Failed to create X11 window");
-        XCloseDisplay(display);
-        return 2;
-    }
+        running = false;
+        overlay.set_click_through(false);
+        need_redraw = true;
+    };
 
-    XStoreName(display, window, "SubEclipse");
-    XSelectInput(display, window, ExposureMask | KeyPressMask | StructureNotifyMask);
-    XMapWindow(display, window);
-    XFlush(display);
-
-    Logger::info("Window opened, entering minimal loop");
-
-    const auto start = std::chrono::steady_clock::now();
-    while (true)
+    auto enter_running_mode = [&]()
     {
-        while (XPending(display) > 0)
+        if (!roi.has_roi())
         {
-            XEvent event;
-            XNextEvent(display, &event);
-            if (event.type == DestroyNotify)
+            Logger::warn("Cannot start: ROI is empty, please draw ROI first");
+            return;
+        }
+        running = true;
+        overlay.set_click_through(true);
+        need_redraw = true;
+    };
+
+    enter_edit_mode();
+    Logger::info("Controls: Space start/pause, R reselect ROI, Q/Esc quit");
+
+    while (!should_exit)
+    {
+        OverlayEvent event;
+        while (overlay.poll_event(event))
+        {
+            switch (event.type)
             {
-                Logger::warn("Window destroy event received");
-                XCloseDisplay(display);
-                return 0;
+            case OverlayEvent::Type::Close:
+                should_exit = true;
+                break;
+            case OverlayEvent::Type::Redraw:
+                need_redraw = true;
+                break;
+            case OverlayEvent::Type::MousePress:
+                if (!running)
+                {
+                    roi.on_mouse_press(event.x, event.y, overlay.width(), overlay.height());
+                    need_redraw = true;
+                }
+                break;
+            case OverlayEvent::Type::MouseMove:
+                if (!running)
+                {
+                    roi.on_mouse_move(event.x, event.y, overlay.width(), overlay.height());
+                    need_redraw = true;
+                }
+                break;
+            case OverlayEvent::Type::MouseRelease:
+                if (!running)
+                {
+                    roi.on_mouse_release(overlay.width(), overlay.height());
+                    need_redraw = true;
+                }
+                break;
+            case OverlayEvent::Type::Key:
+                if (event.keysym == XK_q || event.keysym == XK_Q || event.keysym == XK_Escape)
+                {
+                    should_exit = true;
+                }
+                else if (event.keysym == XK_space)
+                {
+                    if (running)
+                    {
+                        enter_edit_mode();
+                        Logger::info("Paused: edit mode");
+                    }
+                    else
+                    {
+                        enter_running_mode();
+                        if (running)
+                        {
+                            Logger::info("Running: click-through on");
+                        }
+                    }
+                }
+                else if (event.keysym == XK_r || event.keysym == XK_R)
+                {
+                    roi.clear();
+                    enter_edit_mode();
+                    Logger::info("ROI cleared: draw new ROI");
+                }
+                break;
+            case OverlayEvent::Type::Empty:
+                break;
             }
         }
 
-        const auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                    std::chrono::steady_clock::now() - start)
-                                    .count();
-
-        if (elapsed_ms >= config.window_show_ms)
+        if (need_redraw)
         {
-            break;
+            overlay.draw(roi);
+            need_redraw = false;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(8));
     }
 
-    XDestroyWindow(display, window);
-    XCloseDisplay(display);
-
-    Logger::info("Window closed, exiting normally");
+    Logger::info("Exiting SubEclipse overlay");
     return 0;
 }

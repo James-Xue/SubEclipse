@@ -11,6 +11,8 @@ include(cmake/Dependencies.cmake)
 add_library(subeclipse_core
     src/app/logger.cpp
     src/app/config.cpp
+    src/render/roi.cpp
+    src/platform/x11/overlay_window.cpp
 )
 
 target_include_directories(subeclipse_core
@@ -26,6 +28,8 @@ target_link_libraries(subeclipse
     PRIVATE
         subeclipse_core
         X11::X11
+    ${X11_Xext_LIB}
+    ${X11_Xfixes_LIB}
 )
 
 message(STATUS "Configured SubEclipse with C++${CMAKE_CXX_STANDARD}")
