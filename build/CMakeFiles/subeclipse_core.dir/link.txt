@@ -1,0 +1,2 @@
+/usr/bin/ar qc libsubeclipse_core.a CMakeFiles/subeclipse_core.dir/src/app/logger.cpp.o CMakeFiles/subeclipse_core.dir/src/app/config.cpp.o
+/usr/bin/ranlib libsubeclipse_core.a
