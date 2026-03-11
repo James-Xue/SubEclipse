@@ -275,7 +275,7 @@ void append_detection_if_valid(std::vector<TextDetection> &out,
 {
     ++stats.candidate_count;
 
-    const int min_width = std::max(8, frame.width / 45);
+    const int min_width = std::max(6, band_h / 3);
     if (width < min_width)
     {
         ++stats.width_reject_count;
@@ -350,6 +350,7 @@ void process_band(const Frame &frame,
 
     const int col_threshold = std::max(2, static_cast<int>(static_cast<float>(band_h) * 0.22F));
     int x_start = -1;
+    std::vector<std::pair<int, int>> raw_segments;
     for (int x = 0; x < frame.width; ++x)
     {
         const bool active = col_hits[static_cast<std::size_t>(x)] >= col_threshold;
@@ -358,21 +359,56 @@ void process_band(const Frame &frame,
             if (x_start < 0)
             {
                 x_start = x;
-                ++stats.active_segments;
             }
         }
         else if (x_start >= 0)
         {
-            append_detection_if_valid(
-                out, frame, x_start, y0, band_h, x - x_start, params.threshold, debug, stats, log_context);
+            raw_segments.emplace_back(x_start, x - 1);
             x_start = -1;
         }
     }
 
     if (x_start >= 0)
     {
+        raw_segments.emplace_back(x_start, frame.width - 1);
+    }
+
+    std::vector<std::pair<int, int>> merged_segments;
+    if (!raw_segments.empty())
+    {
+        const int merge_gap = std::max(2, band_h / 6);
+        int cur_start = raw_segments.front().first;
+        int cur_end = raw_segments.front().second;
+
+        for (std::size_t i = 1; i < raw_segments.size(); ++i)
+        {
+            const int next_start = raw_segments[i].first;
+            const int next_end = raw_segments[i].second;
+            const int gap = next_start - cur_end - 1;
+
+            if (gap <= merge_gap)
+            {
+                cur_end = std::max(cur_end, next_end);
+            }
+            else
+            {
+                merged_segments.emplace_back(cur_start, cur_end);
+                cur_start = next_start;
+                cur_end = next_end;
+            }
+        }
+
+        merged_segments.emplace_back(cur_start, cur_end);
+    }
+
+    stats.active_segments += static_cast<int>(merged_segments.size());
+
+    for (const auto &segment : merged_segments)
+    {
+        const int seg_start = segment.first;
+        const int seg_width = segment.second - segment.first + 1;
         append_detection_if_valid(
-            out, frame, x_start, y0, band_h, frame.width - x_start, params.threshold, debug, stats, log_context);
+            out, frame, seg_start, y0, band_h, seg_width, params.threshold, debug, stats, log_context);
     }
 }
 } // namespace
