@@ -11,7 +11,9 @@ include(cmake/Dependencies.cmake)
 add_library(subeclipse_core
     src/app/logger.cpp
     src/app/config.cpp
+    src/app/pipeline.cpp
     src/render/roi.cpp
+    src/vision/simple_text_detector.cpp
     src/platform/x11/overlay_window.cpp
     src/platform/x11/x11_capture.cpp
 )

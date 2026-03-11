@@ -17,33 +17,45 @@ namespace subeclipse
 
 namespace
 {
+/* Display 断线或初始化失败后的最小重连间隔，避免高频重试压垮日志与系统调用。 */
 constexpr std::int64_t kReconnectIntervalMs = 1000;
+/* 告警最小输出间隔，避免连续失败时日志刷屏。 */
 constexpr std::int64_t kWarnIntervalMs = 1000;
 } // namespace
 
+/*
+ * X11 抓屏实现内部状态。
+ * 目的：将平台细节集中在 Impl，保持头文件最小暴露面并降低编译耦合。
+ */
 struct X11Capture::Impl
 {
+    /* X11 连接与根窗口句柄。 */
     Display *display = nullptr;
     int screen = 0;
     Window root = 0;
 
+    /* 当前 ROI 快照及其是否已初始化。 */
     RoiRect roi{};
     bool roi_set = false;
 
+    /* XShm 相关资源；尺寸变化时需要重建。 */
     bool shm_available = false;
     XImage *shm_image = nullptr;
     XShmSegmentInfo shm_info{};
     int shm_width = 0;
     int shm_height = 0;
 
+    /* 节流时间戳：分别用于重连与告警。 */
     std::int64_t last_reconnect_ms = 0;
     std::int64_t last_warn_ms = 0;
 };
 
+/* 构造：仅分配 Impl，延迟到首次 grab() 再建立 X11 连接。 */
 X11Capture::X11Capture() : impl_(new Impl())
 {
 }
 
+/* 析构：释放全部底层资源，确保共享内存段和 Display 不泄漏。 */
 X11Capture::~X11Capture()
 {
     disconnect_display();
@@ -51,12 +63,18 @@ X11Capture::~X11Capture()
     impl_ = nullptr;
 }
 
+/* 更新 ROI 快照，供后续 grab() 使用。 */
 void X11Capture::set_roi(const RoiRect &roi)
 {
     impl_->roi = roi;
     impl_->roi_set = true;
 }
 
+/*
+ * 抓屏主入口。
+ * 流程：连接检查 -> ROI 校验 -> XShm 优先 -> XGetImage 回退。
+ * 任一路径成功后都会统一写入 frame.ts_ms，便于上游按时间排序。
+ */
 bool X11Capture::grab(Frame &frame)
 {
     if (!ensure_connected())
@@ -76,12 +94,14 @@ bool X11Capture::grab(Frame &frame)
         return false;
     }
 
+    /* 首选共享内存路径，减少像素搬运开销。 */
     if (impl_->shm_available && grab_with_shm(roi, frame))
     {
         frame.ts_ms = now_ms();
         return true;
     }
 
+    /* 回退到通用路径，保证在不支持 XShm 的环境仍可工作。 */
     if (grab_with_xgetimage(roi, frame))
     {
         frame.ts_ms = now_ms();
@@ -93,6 +113,10 @@ bool X11Capture::grab(Frame &frame)
     return false;
 }
 
+/*
+ * 确保 Display 可用。
+ * 包含失败节流：在最小重连间隔内直接返回 false，避免频繁 XOpenDisplay。
+ */
 bool X11Capture::ensure_connected()
 {
     if (impl_->display != nullptr)
@@ -120,6 +144,9 @@ bool X11Capture::ensure_connected()
     int major = 0;
     int minor = 0;
     Bool pixmaps = False;
+    /*
+     * 仅用于能力探测；即使不可用也不失败，后续自动走 XGetImage。
+     */
     impl_->shm_available = XShmQueryVersion(impl_->display, &major, &minor, &pixmaps) != 0;
 
     if (impl_->shm_available)
@@ -133,6 +160,10 @@ bool X11Capture::ensure_connected()
     return true;
 }
 
+/*
+ * 主动断开 Display 并释放所有依附资源。
+ * 顺序要求：先释放 shm_image，再关 Display，避免对失效 Display 调用 XShmDetach。
+ */
 void X11Capture::disconnect_display()
 {
     release_shm_image();
@@ -148,6 +179,10 @@ void X11Capture::disconnect_display()
     impl_->shm_available = false;
 }
 
+/*
+ * 校验并裁剪 ROI 到屏幕可见范围。
+ * 若最终为空矩形则返回 false，调用方应跳过本次抓屏。
+ */
 bool X11Capture::validate_and_clamp_roi(RoiRect &roi)
 {
     if (roi.width <= 0 || roi.height <= 0)
@@ -169,6 +204,7 @@ bool X11Capture::validate_and_clamp_roi(RoiRect &roi)
     int x2 = roi.x + roi.width;
     int y2 = roi.y + roi.height;
 
+    /* 将左右上下边界都收敛到 [0, screen]，再回算宽高。 */
     x1 = std::clamp(x1, 0, screen_width);
     y1 = std::clamp(y1, 0, screen_height);
     x2 = std::clamp(x2, 0, screen_width);
@@ -187,6 +223,7 @@ bool X11Capture::validate_and_clamp_roi(RoiRect &roi)
     return true;
 }
 
+/* 共享内存抓屏路径：要求 shm_image 已就绪。 */
 bool X11Capture::grab_with_shm(const RoiRect &roi, Frame &frame)
 {
     if (!ensure_shm_image(roi.width, roi.height))
@@ -203,6 +240,7 @@ bool X11Capture::grab_with_shm(const RoiRect &roi, Frame &frame)
     return copy_ximage_to_bgra(static_cast<void *>(impl_->shm_image), frame);
 }
 
+/* 通用抓屏路径：每次临时创建 XImage，使用后立即销毁。 */
 bool X11Capture::grab_with_xgetimage(const RoiRect &roi, Frame &frame)
 {
     XImage *image = XGetImage(impl_->display,
@@ -225,6 +263,10 @@ bool X11Capture::grab_with_xgetimage(const RoiRect &roi, Frame &frame)
     return ok;
 }
 
+/*
+ * 确保 XShm 图像缓存可用。
+ * 当尺寸不匹配时先释放旧资源再重建，避免尺寸错配导致越界。
+ */
 bool X11Capture::ensure_shm_image(int width, int height)
 {
     if (!impl_->shm_available)
@@ -291,6 +333,9 @@ bool X11Capture::ensure_shm_image(int width, int height)
         return false;
     }
 
+    /*
+     * 标记段为“删除待定”：即便进程异常退出，系统也会在最后一个附着释放后清理。
+     */
     XSync(impl_->display, False);
     shmctl(impl_->shm_info.shmid, IPC_RMID, nullptr);
 
@@ -300,6 +345,10 @@ bool X11Capture::ensure_shm_image(int width, int height)
     return true;
 }
 
+/*
+ * 释放 XShm 资源。
+ * 注意：shmdt 仅在地址有效时执行；随后重置结构体避免悬空状态复用。
+ */
 void X11Capture::release_shm_image()
 {
     if (impl_->shm_image == nullptr)
@@ -326,12 +375,17 @@ void X11Capture::release_shm_image()
     impl_->shm_height = 0;
 }
 
+/* 返回系统时钟毫秒时间戳。 */
 std::int64_t X11Capture::now_ms()
 {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
         .count();
 }
 
+/*
+ * 从任意位宽/位移的通道掩码中提取 0-255 通道值。
+ * 适配不同视觉格式（例如 5-6-5、8-8-8 等）。
+ */
 std::uint8_t X11Capture::channel_from_mask(unsigned long pixel, unsigned long mask)
 {
     if (mask == 0UL)
@@ -370,6 +424,10 @@ std::uint8_t X11Capture::channel_from_mask(unsigned long pixel, unsigned long ma
     return static_cast<std::uint8_t>((raw * 255UL) / max_value);
 }
 
+/*
+ * 将 XImage 像素拷贝并标准化为 BGRA。
+ * 统一输出格式可以简化后续检测算法的输入假设。
+ */
 bool X11Capture::copy_ximage_to_bgra(void *ximage_ptr, Frame &frame)
 {
     XImage *image = static_cast<XImage *>(ximage_ptr);
@@ -404,6 +462,10 @@ bool X11Capture::copy_ximage_to_bgra(void *ximage_ptr, Frame &frame)
     return true;
 }
 
+/*
+ * 告警节流：同一时间窗口内仅输出一次 warn。
+ * 适用于高频失败场景（断连、权限问题、屏幕切换）。
+ */
 void X11Capture::warn_throttled(const char *message)
 {
     const std::int64_t now = now_ms();

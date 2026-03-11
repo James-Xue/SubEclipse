@@ -2,5 +2,8 @@
     "log_level": "info",
     "window_width": 960,
     "window_height": 540,
-    "window_show_ms": 1200
+    "window_show_ms": 1200,
+    "detect_threshold": 0.6,
+    "capture_fps": 5,
+    "mask_style": "black_box"
 }

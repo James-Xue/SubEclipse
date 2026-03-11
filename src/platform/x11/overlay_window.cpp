@@ -114,7 +114,7 @@ bool OverlayWindow::create(int width, int height, const char *title)
 
     XSetForeground(display_, gc_red_, color_pixel("red"));
     XSetForeground(display_, gc_white_, color_pixel("white"));
-    XSetForeground(display_, gc_bg_, 0x00000000UL);
+    XSetForeground(display_, gc_bg_, BlackPixel(display_, screen_));
 
     XMapWindow(display_, window_);
     XFlush(display_);
@@ -269,7 +269,7 @@ bool OverlayWindow::poll_event(OverlayEvent &event)
  * 执行一帧绘制。
  * 当前策略是“先清空再画 ROI”，保持输出确定性，避免残影。
  */
-void OverlayWindow::draw(const RoiEditor &roi)
+void OverlayWindow::draw(const RoiEditor &roi, const std::vector<RoiRect> &mask_boxes)
 {
     if (!is_valid())
     {
@@ -277,6 +277,22 @@ void OverlayWindow::draw(const RoiEditor &roi)
     }
 
     XClearWindow(display_, window_);
+
+    for (const RoiRect &box : mask_boxes)
+    {
+        if (box.width <= 0 || box.height <= 0)
+        {
+            continue;
+        }
+
+        XFillRectangle(display_,
+            window_,
+            gc_bg_,
+            box.x,
+            box.y,
+            static_cast<unsigned int>(box.width),
+            static_cast<unsigned int>(box.height));
+    }
 
     if (roi.has_roi())
     {

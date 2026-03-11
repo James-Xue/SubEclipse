@@ -1,16 +1,16 @@
 #include "subeclipse/config.h"
-#include "subeclipse/capture.h"
+#include "subeclipse/detector.h"
 #include "subeclipse/logger.h"
 #include "subeclipse/overlay_window.h"
+#include "subeclipse/pipeline.h"
 #include "subeclipse/roi.h"
 
 #include <X11/keysym.h>
 
-#include <chrono>
-#include <cstdint>
 #include <memory>
-#include <sstream>
 #include <thread>
+#include <utility>
+#include <vector>
 
 namespace
 {
@@ -31,12 +31,20 @@ void enter_edit_mode(subeclipse::OverlayWindow &overlay, bool &running, bool &ne
  */
 bool enter_running_mode(subeclipse::OverlayWindow &overlay,
     const subeclipse::RoiEditor &roi,
+    subeclipse::CaptureVisionPipeline &pipeline,
+    const subeclipse::AppConfig &config,
     bool &running,
     bool &need_redraw)
 {
     if (!roi.has_roi())
     {
         subeclipse::Logger::warn("Cannot start: ROI is empty, please draw ROI first");
+        return false;
+    }
+
+    if (!pipeline.start(roi.rect(), config.capture_fps, config.detect_threshold))
+    {
+        subeclipse::Logger::error("Cannot start: pipeline init failed");
         return false;
     }
 
@@ -87,6 +95,9 @@ void handle_mouse_event(const subeclipse::OverlayEvent &event,
 void handle_key_event(const subeclipse::OverlayEvent &event,
     subeclipse::OverlayWindow &overlay,
     subeclipse::RoiEditor &roi,
+    subeclipse::CaptureVisionPipeline &pipeline,
+    const subeclipse::AppConfig &config,
+    std::vector<subeclipse::RoiRect> &mask_boxes,
     bool &running,
     bool &need_redraw,
     bool &should_exit)
@@ -101,10 +112,12 @@ void handle_key_event(const subeclipse::OverlayEvent &event,
     {
         if (running)
         {
+            pipeline.stop();
+            mask_boxes.clear();
             enter_edit_mode(overlay, running, need_redraw);
             subeclipse::Logger::info("Paused: edit mode");
         }
-        else if (enter_running_mode(overlay, roi, running, need_redraw))
+        else if (enter_running_mode(overlay, roi, pipeline, config, running, need_redraw))
         {
             subeclipse::Logger::info("Running: click-through on");
         }
@@ -113,6 +126,8 @@ void handle_key_event(const subeclipse::OverlayEvent &event,
 
     if (event.keysym == XK_r || event.keysym == XK_R)
     {
+        pipeline.stop();
+        mask_boxes.clear();
         roi.clear();
         enter_edit_mode(overlay, running, need_redraw);
         subeclipse::Logger::info("ROI cleared: draw new ROI");
@@ -125,6 +140,9 @@ void handle_key_event(const subeclipse::OverlayEvent &event,
  */
 void pump_events_once(subeclipse::OverlayWindow &overlay,
     subeclipse::RoiEditor &roi,
+    subeclipse::CaptureVisionPipeline &pipeline,
+    const subeclipse::AppConfig &config,
+    std::vector<subeclipse::RoiRect> &mask_boxes,
     bool &running,
     bool &need_redraw,
     bool &should_exit)
@@ -146,7 +164,7 @@ void pump_events_once(subeclipse::OverlayWindow &overlay,
             handle_mouse_event(event, running, overlay, roi, need_redraw);
             break;
         case subeclipse::OverlayEvent::Type::Key:
-            handle_key_event(event, overlay, roi, running, need_redraw, should_exit);
+            handle_key_event(event, overlay, roi, pipeline, config, mask_boxes, running, need_redraw, should_exit);
             break;
         case subeclipse::OverlayEvent::Type::Empty:
             break;
@@ -180,7 +198,7 @@ int main()
     }
 
     RoiEditor roi;
-    std::unique_ptr<IScreenCapture> capture = std::make_unique<X11Capture>();
+    CaptureVisionPipeline pipeline(std::make_unique<X11Capture>(), std::make_unique<SimpleTextDetector>());
 
     /*
      * 运行态含义：
@@ -191,15 +209,12 @@ int main()
     /* 延迟重绘标志：只在状态/输入变化时重绘，避免无效刷新。 */
     bool need_redraw = true;
     bool should_exit = false;
+    std::vector<RoiRect> mask_boxes;
 
-    /* 抓屏验证：运行态按固定间隔抓取 ROI，并周期性输出统计。 */
-    constexpr std::int64_t kCaptureIntervalMs = 200;
-    constexpr std::int64_t kCaptureStatsIntervalMs = 2000;
-    std::int64_t last_capture_ms = 0;
-    std::int64_t last_stats_ms = 0;
-    std::uint64_t capture_attempts = 0;
-    std::uint64_t capture_success = 0;
-    Frame last_frame{};
+    if (config.mask_style != "black_box")
+    {
+        Logger::warn("Unsupported mask_style, fallback to black_box");
+    }
 
     enter_edit_mode(overlay, running, need_redraw);
     Logger::info("Controls: Space start/pause, R reselect ROI, Q/Esc quit");
@@ -210,50 +225,43 @@ int main()
          * 单轮事件泵：先快速消费队列，再按需重绘一次。
          * 这样可减少重复绘制，且让状态切换在同一循环内收敛。
          */
-        pump_events_once(overlay, roi, running, need_redraw, should_exit);
+        pump_events_once(overlay, roi, pipeline, config, mask_boxes, running, need_redraw, should_exit);
+
+        if (running)
+        {
+            pipeline.update_roi(roi.rect());
+
+            const auto latest = pipeline.latest_detection();
+            if (latest.has_value())
+            {
+                const RoiRect roi_rect = roi.rect();
+                std::vector<RoiRect> latest_boxes;
+                latest_boxes.reserve(latest->detections.size());
+
+                for (const TextDetection &det : latest->detections)
+                {
+                    if (det.rect.width <= 0 || det.rect.height <= 0)
+                    {
+                        continue;
+                    }
+
+                    latest_boxes.push_back(RoiRect{
+                        roi_rect.x + det.rect.x,
+                        roi_rect.y + det.rect.y,
+                        det.rect.width,
+                        det.rect.height,
+                    });
+                }
+
+                mask_boxes = std::move(latest_boxes);
+                need_redraw = true;
+            }
+        }
 
         if (need_redraw)
         {
-            overlay.draw(roi);
+            overlay.draw(roi, mask_boxes);
             need_redraw = false;
-        }
-
-        if (running && roi.has_roi())
-        {
-            const auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch())
-                                 .count();
-
-            if (now - last_capture_ms >= kCaptureIntervalMs)
-            {
-                last_capture_ms = now;
-                capture->set_roi(roi.rect());
-                ++capture_attempts;
-
-                Frame frame;
-                if (capture->grab(frame))
-                {
-                    ++capture_success;
-                    last_frame = std::move(frame);
-                }
-            }
-
-            if (now - last_stats_ms >= kCaptureStatsIntervalMs)
-            {
-                last_stats_ms = now;
-
-                std::ostringstream oss;
-                oss << "Capture stats: attempts=" << capture_attempts << ", success=" << capture_success
-                    << ", failed=" << (capture_attempts - capture_success);
-
-                if (last_frame.width > 0 && last_frame.height > 0)
-                {
-                    oss << ", last_frame={ts_ms=" << last_frame.ts_ms << ", size=" << last_frame.width << "x"
-                        << last_frame.height << ", bytes=" << last_frame.bgra.size() << "}";
-                }
-
-                Logger::info(oss.str());
-            }
         }
 
         /*
@@ -263,6 +271,7 @@ int main()
         std::this_thread::sleep_for(std::chrono::milliseconds(8));
     }
 
+    pipeline.stop();
     Logger::info("Exiting SubEclipse overlay");
     return 0;
 }
