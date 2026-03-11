@@ -193,7 +193,7 @@ DetectorParams make_detector_params(const Frame &frame, float threshold)
     params.grad_threshold = 24 + static_cast<int>((1.0F - t) * 40.0F);
     params.row_density_threshold = 0.06F + (1.0F - t) * 0.08F;
     params.min_band_height = std::max(8, frame.height / 40);
-    params.max_band_height = std::max(params.min_band_height + 1, frame.height / 3);
+    params.max_band_height = std::max(params.min_band_height + 1, (frame.height * 2) / 3);
     return params;
 }
 
