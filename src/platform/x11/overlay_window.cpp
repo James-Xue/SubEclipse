@@ -114,10 +114,12 @@ bool OverlayWindow::create(int width, int height, const char *title)
 
     XSetForeground(display_, gc_red_, color_pixel("red"));
     XSetForeground(display_, gc_white_, color_pixel("white"));
-    XSetForeground(display_, gc_bg_, BlackPixel(display_, screen_));
+    XSetForeground(display_, gc_bg_, 0xFF000000UL);
 
     XMapWindow(display_, window_);
     XFlush(display_);
+
+    Logger::info("Overlay mask color configured as opaque black (ARGB=0xFF000000)");
 
     /* 绑定全局热键，确保 click-through 开启后仍可控制程序。 */
     grab_hotkeys();
