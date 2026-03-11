@@ -1,4 +1,0 @@
-/home/james/1_Code/03_SubEclipse/build-debug/CMakeFiles/subeclipse_core.dir
-/home/james/1_Code/03_SubEclipse/build-debug/CMakeFiles/subeclipse.dir
-/home/james/1_Code/03_SubEclipse/build-debug/CMakeFiles/edit_cache.dir
-/home/james/1_Code/03_SubEclipse/build-debug/CMakeFiles/rebuild_cache.dir
