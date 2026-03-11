@@ -38,9 +38,50 @@ struct RowHitStats
 struct BandDebugContext
 {
     int band_index = 0;
-    int y0 = 0;
-    int y1 = 0;
 };
+
+struct CandidateAggregateStats
+{
+    int candidate_count = 0;
+    int width_reject_count = 0;
+    int score_reject_count = 0;
+    int accept_count = 0;
+    int active_segments = 0;
+    int sampled_reject_logs = 0;
+};
+
+struct DetectorLogState
+{
+    std::uint64_t frame_index = 0;
+    int no_band_streak = 0;
+    int no_detection_streak = 0;
+};
+
+struct DetectLogContext
+{
+    std::uint64_t frame_index = 0;
+    bool allow_reject_sampling = false;
+};
+
+constexpr std::uint64_t kSummaryIntervalFrames = 20U;
+constexpr int kStreakLogIntervalFrames = 30;
+constexpr std::uint64_t kRejectSampleIntervalFrames = 60U;
+
+DetectorLogState &detector_log_state()
+{
+    static DetectorLogState state;
+    return state;
+}
+
+bool should_emit_summary(const std::uint64_t frame_index)
+{
+    return frame_index == 1U || (frame_index % kSummaryIntervalFrames) == 0U;
+}
+
+bool should_emit_streak_log(const int streak)
+{
+    return streak > 0 && (streak % kStreakLogIntervalFrames) == 0;
+}
 
 inline std::string fmt_f(float value)
 {
@@ -228,15 +269,24 @@ void append_detection_if_valid(std::vector<TextDetection> &out,
     int band_h,
     int width,
     float threshold,
-    const BandDebugContext &debug)
+    const BandDebugContext &debug,
+    CandidateAggregateStats &stats,
+    const DetectLogContext &log_context)
 {
+    ++stats.candidate_count;
+
     const int min_width = std::max(12, frame.width / 20);
     if (width < min_width)
     {
-        Logger::info("[Detector][Candidate] band#" + std::to_string(debug.band_index) +
-                     " reject: width_too_small width=" + std::to_string(width) +
-                     " min_width=" + std::to_string(min_width) + " x0=" + std::to_string(x_start) +
-                     " y0=" + std::to_string(y0) + " band_h=" + std::to_string(band_h));
+        ++stats.width_reject_count;
+        if (log_context.allow_reject_sampling && stats.sampled_reject_logs < 2)
+        {
+            ++stats.sampled_reject_logs;
+            Logger::info("[Detector][Candidate] band#" + std::to_string(debug.band_index) +
+                         " sampled_reject: width_too_small width=" + std::to_string(width) +
+                         " min_width=" + std::to_string(min_width) + " x0=" + std::to_string(x_start) +
+                         " y0=" + std::to_string(y0) + " band_h=" + std::to_string(band_h));
+        }
         return;
     }
 
@@ -253,18 +303,20 @@ void append_detection_if_valid(std::vector<TextDetection> &out,
     const float score_threshold = threshold * 0.5F;
     if (score >= score_threshold)
     {
-        Logger::info("[Detector][Candidate] band#" + std::to_string(debug.band_index) +
-                     " accept: x0=" + std::to_string(x_start) + " y0=" + std::to_string(y0) +
-                     " width=" + std::to_string(width) + " band_h=" + std::to_string(band_h) +
-                     " score=" + fmt_f(score) + " threshold=" + fmt_f(score_threshold));
+        ++stats.accept_count;
         out.push_back(TextDetection{RoiRect{rx, ry, rw, rh}, score});
         return;
     }
 
-    Logger::info("[Detector][Candidate] band#" + std::to_string(debug.band_index) +
-                 " reject: score_too_small x0=" + std::to_string(x_start) + " y0=" + std::to_string(y0) +
-                 " width=" + std::to_string(width) + " band_h=" + std::to_string(band_h) + " score=" + fmt_f(score) +
-                 " threshold=" + fmt_f(score_threshold));
+    ++stats.score_reject_count;
+    if (log_context.allow_reject_sampling && stats.sampled_reject_logs < 2)
+    {
+        ++stats.sampled_reject_logs;
+        Logger::info("[Detector][Candidate] band#" + std::to_string(debug.band_index) +
+                     " sampled_reject: score_too_small x0=" + std::to_string(x_start) + " y0=" + std::to_string(y0) +
+                     " width=" + std::to_string(width) + " band_h=" + std::to_string(band_h) +
+                     " score=" + fmt_f(score) + " threshold=" + fmt_f(score_threshold));
+    }
 }
 
 void process_band(const Frame &frame,
@@ -272,12 +324,14 @@ void process_band(const Frame &frame,
     const std::pair<int, int> &band,
     const BandProcessParams &params,
     int band_index,
-    std::vector<TextDetection> &out)
+    std::vector<TextDetection> &out,
+    CandidateAggregateStats &stats,
+    const DetectLogContext &log_context)
 {
     const int y0 = band.first;
     const int y1 = band.second;
     const int band_h = y1 - y0 + 1;
-    const BandDebugContext debug{band_index, y0, y1};
+    const BandDebugContext debug{band_index};
 
     std::vector<int> col_hits(static_cast<std::size_t>(frame.width), 0);
     for (int y = y0; y <= y1; ++y)
@@ -296,7 +350,6 @@ void process_band(const Frame &frame,
 
     const int col_threshold = std::max(2, static_cast<int>(static_cast<float>(band_h) * 0.22F));
     int x_start = -1;
-    int active_segments = 0;
     for (int x = 0; x < frame.width; ++x)
     {
         const bool active = col_hits[static_cast<std::size_t>(x)] >= col_threshold;
@@ -305,24 +358,22 @@ void process_band(const Frame &frame,
             if (x_start < 0)
             {
                 x_start = x;
-                ++active_segments;
+                ++stats.active_segments;
             }
         }
         else if (x_start >= 0)
         {
-            append_detection_if_valid(out, frame, x_start, y0, band_h, x - x_start, params.threshold, debug);
+            append_detection_if_valid(
+                out, frame, x_start, y0, band_h, x - x_start, params.threshold, debug, stats, log_context);
             x_start = -1;
         }
     }
 
     if (x_start >= 0)
     {
-        append_detection_if_valid(out, frame, x_start, y0, band_h, frame.width - x_start, params.threshold, debug);
+        append_detection_if_valid(
+            out, frame, x_start, y0, band_h, frame.width - x_start, params.threshold, debug, stats, log_context);
     }
-
-    Logger::info("[Detector][Col] band#" + std::to_string(band_index) + " y0=" + std::to_string(y0) +
-                 " y1=" + std::to_string(y1) + " band_h=" + std::to_string(band_h) + " col_threshold=" +
-                 std::to_string(col_threshold) + " active_segments=" + std::to_string(active_segments));
 }
 } // namespace
 
@@ -339,28 +390,30 @@ void process_band(const Frame &frame,
 std::vector<TextDetection> SimpleTextDetector::detect(const Frame &frame, float threshold)
 {
     std::vector<TextDetection> out;
+    CandidateAggregateStats candidate_stats;
+    DetectorLogState &log_state = detector_log_state();
+    ++log_state.frame_index;
+
+    const std::uint64_t frame_index = log_state.frame_index;
+    const bool emit_summary = should_emit_summary(frame_index);
+    const bool allow_reject_sampling = emit_summary || ((frame_index % kRejectSampleIntervalFrames) == 0U);
+    const DetectLogContext log_context{frame_index, allow_reject_sampling};
 
     const std::size_t expected_bytes =
         static_cast<std::size_t>(std::max(frame.width, 0)) * static_cast<std::size_t>(std::max(frame.height, 0)) * 4U;
-    Logger::info("[Detector][Input] frame=" + std::to_string(frame.width) + "x" + std::to_string(frame.height) +
-                 " bgra_bytes=" + std::to_string(frame.bgra.size()) +
-                 " expected_bgra_bytes=" + std::to_string(expected_bytes));
 
     /* 尺寸过小时梯度统计意义不大，直接返回空结果。 */
     if (!validate_frame_input(frame))
     {
-        Logger::warn("[Detector][Input] invalid frame, skip detection");
+        Logger::warn("[Detector][Input] invalid frame, skip detection frame_idx=" + std::to_string(frame_index) +
+                     " frame=" + std::to_string(frame.width) + "x" + std::to_string(frame.height) + " bgra_bytes=" +
+                     std::to_string(frame.bgra.size()) + " expected_bgra_bytes=" + std::to_string(expected_bytes));
         return out;
     }
 
     /* 统一阈值范围，避免上层传入非法参数影响内部映射。 */
     const float t = std::clamp(threshold, 0.0F, 1.0F);
     const DetectorParams detector_params = make_detector_params(frame, t);
-    Logger::info("[Detector][Params] input_threshold=" + fmt_f(threshold) + " clamped_threshold=" + fmt_f(t) +
-                 " grad_threshold=" + std::to_string(detector_params.grad_threshold) +
-                 " row_density_threshold=" + fmt_f(detector_params.row_density_threshold) +
-                 " min_band_height=" + std::to_string(detector_params.min_band_height) +
-                 " max_band_height=" + std::to_string(detector_params.max_band_height));
 
     /*
      * 先构建灰度图，后续所有梯度与投影都基于灰度进行，
@@ -381,9 +434,6 @@ std::vector<TextDetection> SimpleTextDetector::detect(const Frame &frame, float 
      */
     const std::vector<int> row_hits = compute_row_hits(frame, gray, detector_params.grad_threshold);
     const RowHitStats row_stats = summarize_row_hits(row_hits);
-    Logger::info("[Detector][Row] row_hits_stats min=" + std::to_string(row_stats.min_hits) +
-                 " max=" + std::to_string(row_stats.max_hits) + " mean=" + fmt_f(row_stats.mean_hits) +
-                 " hit_rows=" + std::to_string(row_stats.hit_rows) + "/" + std::to_string(frame.height));
 
     /*
      * 将“高密度行”合并为连续文本带（band）。
@@ -394,15 +444,18 @@ std::vector<TextDetection> SimpleTextDetector::detect(const Frame &frame, float 
         detector_params.row_density_threshold,
         detector_params.min_band_height,
         detector_params.max_band_height);
-    Logger::info("[Detector][Band] extracted_band_count=" + std::to_string(bands.size()));
-    for (std::size_t i = 0; i < bands.size(); ++i)
+    if (bands.empty())
     {
-        const int y0 = bands[i].first;
-        const int y1 = bands[i].second;
-        const int height = y1 - y0 + 1;
-        const float density = compute_band_density(frame, row_hits, y0, y1);
-        Logger::info("[Detector][Band] band#" + std::to_string(i) + " y0=" + std::to_string(y0) + " y1=" +
-                     std::to_string(y1) + " height=" + std::to_string(height) + " mean_row_density=" + fmt_f(density));
+        ++log_state.no_band_streak;
+        if (should_emit_streak_log(log_state.no_band_streak))
+        {
+            Logger::warn("[Detector][Band] extracted_band_count=0 streak=" + std::to_string(log_state.no_band_streak) +
+                         " frame_idx=" + std::to_string(frame_index));
+        }
+    }
+    else
+    {
+        log_state.no_band_streak = 0;
     }
 
     /*
@@ -413,7 +466,7 @@ std::vector<TextDetection> SimpleTextDetector::detect(const Frame &frame, float 
      */
     for (std::size_t i = 0; i < bands.size(); ++i)
     {
-        process_band(frame, gray, bands[i], band_params, static_cast<int>(i), out);
+        process_band(frame, gray, bands[i], band_params, static_cast<int>(i), out, candidate_stats, log_context);
     }
 
     /* 上限保护：避免异常场景输出过多框导致渲染/上层处理抖动。 */
@@ -422,9 +475,47 @@ std::vector<TextDetection> SimpleTextDetector::detect(const Frame &frame, float 
     {
         out.resize(20);
         Logger::warn("[Detector][Output] detection_count_capped from=" + std::to_string(out_before_cap) +
-                     " to=" + std::to_string(out.size()));
+                     " to=" + std::to_string(out.size()) + " frame_idx=" + std::to_string(frame_index));
     }
-    Logger::info("[Detector][Output] final_detection_count=" + std::to_string(out.size()));
+
+    if (out.empty())
+    {
+        ++log_state.no_detection_streak;
+        if (should_emit_streak_log(log_state.no_detection_streak))
+        {
+            Logger::warn("[Detector][Output] final_detection_count=0 streak=" +
+                         std::to_string(log_state.no_detection_streak) + " frame_idx=" + std::to_string(frame_index));
+        }
+    }
+    else
+    {
+        log_state.no_detection_streak = 0;
+    }
+
+    if (emit_summary)
+    {
+        float first_band_density = 0.0F;
+        if (!bands.empty())
+        {
+            first_band_density = compute_band_density(frame, row_hits, bands.front().first, bands.front().second);
+        }
+
+        Logger::info(
+            "[Detector][Summary] frame_idx=" + std::to_string(frame_index) + " frame=" + std::to_string(frame.width) +
+            "x" + std::to_string(frame.height) + " input_threshold=" + fmt_f(threshold) +
+            " clamped_threshold=" + fmt_f(t) + " grad_threshold=" + std::to_string(detector_params.grad_threshold) +
+            " row_density_threshold=" + fmt_f(detector_params.row_density_threshold) +
+            " row_hits_mean=" + fmt_f(row_stats.mean_hits) + " hit_rows=" + std::to_string(row_stats.hit_rows) + "/" +
+            std::to_string(frame.height) + " band_count=" + std::to_string(bands.size()) + " first_band_density=" +
+            fmt_f(first_band_density) + " active_segments=" + std::to_string(candidate_stats.active_segments) +
+            " candidate_count=" + std::to_string(candidate_stats.candidate_count) +
+            " width_reject_count=" + std::to_string(candidate_stats.width_reject_count) +
+            " score_reject_count=" + std::to_string(candidate_stats.score_reject_count) + " accept_count=" +
+            std::to_string(candidate_stats.accept_count) + " final_detection_count=" + std::to_string(out.size()) +
+            " no_band_streak=" + std::to_string(log_state.no_band_streak) +
+            " no_detection_streak=" + std::to_string(log_state.no_detection_streak));
+    }
+
     return out;
 }
 
