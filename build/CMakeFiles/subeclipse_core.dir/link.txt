@@ -1,2 +1,2 @@
-/usr/bin/ar qc libsubeclipse_core.a CMakeFiles/subeclipse_core.dir/src/app/logger.cpp.o CMakeFiles/subeclipse_core.dir/src/app/config.cpp.o
+/usr/bin/ar qc libsubeclipse_core.a CMakeFiles/subeclipse_core.dir/src/app/logger.cpp.o CMakeFiles/subeclipse_core.dir/src/app/config.cpp.o CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.o CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.o
 /usr/bin/ranlib libsubeclipse_core.a

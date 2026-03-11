@@ -83,12 +83,12 @@ clean: CMakeFiles/subeclipse.dir/clean
 CMakeFiles/subeclipse_core.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/subeclipse_core.dir/build.make CMakeFiles/subeclipse_core.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/subeclipse_core.dir/build.make CMakeFiles/subeclipse_core.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/james/1_Code/03_SubEclipse/build/CMakeFiles --progress-num=3,4,5 "Built target subeclipse_core"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/james/1_Code/03_SubEclipse/build/CMakeFiles --progress-num=3,4,5,6,7 "Built target subeclipse_core"
 .PHONY : CMakeFiles/subeclipse_core.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/subeclipse_core.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/james/1_Code/03_SubEclipse/build/CMakeFiles 3
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/james/1_Code/03_SubEclipse/build/CMakeFiles 5
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/subeclipse_core.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/james/1_Code/03_SubEclipse/build/CMakeFiles 0
 .PHONY : CMakeFiles/subeclipse_core.dir/rule
@@ -114,7 +114,7 @@ CMakeFiles/subeclipse.dir/all: CMakeFiles/subeclipse_core.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/subeclipse.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/james/1_Code/03_SubEclipse/build/CMakeFiles 5
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/james/1_Code/03_SubEclipse/build/CMakeFiles 7
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/subeclipse.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/james/1_Code/03_SubEclipse/build/CMakeFiles 0
 .PHONY : CMakeFiles/subeclipse.dir/rule

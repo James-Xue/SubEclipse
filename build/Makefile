@@ -214,6 +214,54 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/subeclipse.dir/build.make CMakeFiles/subeclipse.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/platform/x11/overlay_window.o: src/platform/x11/overlay_window.cpp.o
+.PHONY : src/platform/x11/overlay_window.o
+
+# target to build an object file
+src/platform/x11/overlay_window.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/subeclipse_core.dir/build.make CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.o
+.PHONY : src/platform/x11/overlay_window.cpp.o
+
+src/platform/x11/overlay_window.i: src/platform/x11/overlay_window.cpp.i
+.PHONY : src/platform/x11/overlay_window.i
+
+# target to preprocess a source file
+src/platform/x11/overlay_window.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/subeclipse_core.dir/build.make CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.i
+.PHONY : src/platform/x11/overlay_window.cpp.i
+
+src/platform/x11/overlay_window.s: src/platform/x11/overlay_window.cpp.s
+.PHONY : src/platform/x11/overlay_window.s
+
+# target to generate assembly for a file
+src/platform/x11/overlay_window.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/subeclipse_core.dir/build.make CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.s
+.PHONY : src/platform/x11/overlay_window.cpp.s
+
+src/render/roi.o: src/render/roi.cpp.o
+.PHONY : src/render/roi.o
+
+# target to build an object file
+src/render/roi.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/subeclipse_core.dir/build.make CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.o
+.PHONY : src/render/roi.cpp.o
+
+src/render/roi.i: src/render/roi.cpp.i
+.PHONY : src/render/roi.i
+
+# target to preprocess a source file
+src/render/roi.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/subeclipse_core.dir/build.make CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.i
+.PHONY : src/render/roi.cpp.i
+
+src/render/roi.s: src/render/roi.cpp.s
+.PHONY : src/render/roi.s
+
+# target to generate assembly for a file
+src/render/roi.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/subeclipse_core.dir/build.make CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.s
+.PHONY : src/render/roi.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -233,6 +281,12 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/platform/x11/overlay_window.o"
+	@echo "... src/platform/x11/overlay_window.i"
+	@echo "... src/platform/x11/overlay_window.s"
+	@echo "... src/render/roi.o"
+	@echo "... src/render/roi.i"
+	@echo "... src/render/roi.s"
 .PHONY : help
 
 

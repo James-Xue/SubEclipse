@@ -4,10 +4,14 @@
 CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/main.cpp \
   /home/james/1_Code/03_SubEclipse/include/subeclipse/config.h \
   /home/james/1_Code/03_SubEclipse/include/subeclipse/logger.h \
+  /home/james/1_Code/03_SubEclipse/include/subeclipse/overlay_window.h \
+  /home/james/1_Code/03_SubEclipse/include/subeclipse/roi.h \
   /usr/include/X11/X.h \
   /usr/include/X11/Xfuncproto.h \
   /usr/include/X11/Xlib.h \
   /usr/include/X11/Xosdefs.h \
+  /usr/include/X11/keysym.h \
+  /usr/include/X11/keysymdef.h \
   /usr/include/alloca.h \
   /usr/include/asm-generic/errno-base.h \
   /usr/include/asm-generic/errno.h \
@@ -210,14 +214,21 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h \
   /usr/include/x86_64-linux-gnu/bits/pthreadtypes.h \
   /usr/include/x86_64-linux-gnu/bits/sched.h \
+  /usr/include/x86_64-linux-gnu/bits/select-decl.h \
   /usr/include/x86_64-linux-gnu/bits/select.h \
+  /usr/include/x86_64-linux-gnu/bits/select2.h \
   /usr/include/x86_64-linux-gnu/bits/semaphore.h \
   /usr/include/x86_64-linux-gnu/bits/setjmp.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-intn.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
   /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/stdio2.h \
   /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h \
   /usr/include/x86_64-linux-gnu/bits/stdlib-float.h \
+  /usr/include/x86_64-linux-gnu/bits/stdlib.h \
   /usr/include/x86_64-linux-gnu/bits/struct_mutex.h \
   /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h \
   /usr/include/x86_64-linux-gnu/bits/syscall.h \
@@ -254,10 +265,14 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
   /usr/include/x86_64-linux-gnu/bits/typesizes.h \
   /usr/include/x86_64-linux-gnu/bits/uintn-identity.h \
   /usr/include/x86_64-linux-gnu/bits/uio_lim.h \
+  /usr/include/x86_64-linux-gnu/bits/unistd-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/unistd.h \
   /usr/include/x86_64-linux-gnu/bits/unistd_ext.h \
   /usr/include/x86_64-linux-gnu/bits/waitflags.h \
   /usr/include/x86_64-linux-gnu/bits/waitstatus.h \
   /usr/include/x86_64-linux-gnu/bits/wchar.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2-decl.h \
+  /usr/include/x86_64-linux-gnu/bits/wchar2.h \
   /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h \
   /usr/include/x86_64-linux-gnu/bits/wordsize.h \
   /usr/include/x86_64-linux-gnu/bits/xopen_lim.h \
@@ -331,9 +346,29 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h:
 
-/usr/include/c++/13/cctype:
+/usr/include/x86_64-linux-gnu/bits/wchar2.h:
 
-/usr/include/x86_64-linux-gnu/bits/posix1_lim.h:
+/usr/include/x86_64-linux-gnu/bits/wchar2-decl.h:
+
+/usr/include/x86_64-linux-gnu/bits/wchar.h:
+
+/usr/include/x86_64-linux-gnu/bits/waitflags.h:
+
+/usr/include/x86_64-linux-gnu/bits/unistd_ext.h:
+
+/usr/include/x86_64-linux-gnu/bits/unistd.h:
+
+/usr/include/x86_64-linux-gnu/bits/unistd-decl.h:
+
+/usr/include/x86_64-linux-gnu/bits/uio_lim.h:
+
+/usr/include/x86_64-linux-gnu/bits/uintn-identity.h:
+
+/usr/include/x86_64-linux-gnu/bits/typesizes.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/timer_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/time_t.h:
 
 /usr/include/c++/13/debug/assertions.h:
 
@@ -357,15 +392,17 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/c++/13/cstdlib:
 
+/usr/include/c++/13/cctype:
+
+/usr/include/x86_64-linux-gnu/bits/types/struct_tm.h:
+
+/usr/include/c++/13/ext/atomicity.h:
+
+/usr/include/x86_64-linux-gnu/bits/posix1_lim.h:
+
 /usr/include/c++/13/bits/uses_allocator_args.h:
 
 /usr/include/c++/13/bits/atomic_base.h:
-
-/usr/include/c++/13/exception:
-
-/usr/include/c++/13/bits/stl_pair.h:
-
-/usr/include/x86_64-linux-gnu/bits/errno.h:
 
 /usr/include/c++/13/bits/uses_allocator.h:
 
@@ -374,8 +411,6 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 /usr/include/c++/13/iomanip:
 
 /usr/include/c++/13/bits/align.h:
-
-/usr/include/x86_64-linux-gnu/bits/waitflags.h:
 
 /usr/include/c++/13/bits/streambuf.tcc:
 
@@ -399,12 +434,6 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/c++/13/bits/std_mutex.h:
 
-/usr/include/c++/13/bits/stl_bvector.h:
-
-/usr/include/c++/13/bits/allocator.h:
-
-/usr/include/c++/13/bits/stl_algobase.h:
-
 /usr/include/c++/13/chrono:
 
 /usr/include/c++/13/bits/stl_algo.h:
@@ -414,6 +443,8 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 /usr/include/c++/13/bits/sstream.tcc:
 
 /usr/include/c++/13/cwctype:
+
+/home/james/1_Code/03_SubEclipse/include/subeclipse/overlay_window.h:
 
 /usr/include/c++/13/bits/this_thread_sleep.h:
 
@@ -451,10 +482,6 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/c++/13/system_error:
 
-/usr/include/c++/13/bits/quoted_string.h:
-
-/usr/include/c++/13/bits/ptr_traits.h:
-
 /usr/include/c++/13/bits/stl_heap.h:
 
 /usr/include/c++/13/bits/std_abs.h:
@@ -467,63 +494,9 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/c++/13/numbers:
 
-/usr/include/c++/13/bits/chrono_io.h:
+/usr/include/c++/13/bits/move.h:
 
-/usr/include/c++/13/variant:
-
-/usr/include/c++/13/bits/basic_string.tcc:
-
-/usr/include/c++/13/bits/allocated_ptr.h:
-
-/usr/include/c++/13/bit:
-
-/usr/include/alloca.h:
-
-/usr/include/c++/13/bits/atomic_lockfree_defines.h:
-
-/usr/include/x86_64-linux-gnu/asm/errno.h:
-
-/usr/include/c++/13/bits/basic_string.h:
-
-/usr/include/libintl.h:
-
-/usr/include/c++/13/atomic:
-
-/usr/include/c++/13/bits/locale_facets.h:
-
-/usr/include/c++/13/charconv:
-
-/usr/include/c++/13/backward/binders.h:
-
-/usr/include/c++/13/bits/basic_ios.tcc:
-
-/usr/include/c++/13/ext/aligned_buffer.h:
-
-/usr/include/locale.h:
-
-/usr/include/c++/13/bits/utility.h:
-
-/usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h:
-
-/usr/include/wchar.h:
-
-/usr/include/c++/13/bits/shared_ptr_base.h:
-
-/usr/include/c++/13/bits/basic_ios.h:
-
-/usr/include/x86_64-linux-gnu/bits/time64.h:
-
-/usr/include/x86_64-linux-gnu/bits/long-double.h:
-
-/usr/include/c++/13/bits/algorithmfwd.h:
-
-/usr/include/c++/13/ext/alloc_traits.h:
-
-/usr/include/c++/13/new:
-
-/usr/include/c++/13/bits/alloc_traits.h:
-
-/usr/include/c++/13/bits/concept_check.h:
+/usr/include/c++/13/bits/memoryfwd.h:
 
 /usr/include/c++/13/cerrno:
 
@@ -533,9 +506,43 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h:
 
+/usr/include/c++/13/variant:
+
+/usr/include/x86_64-linux-gnu/bits/waitstatus.h:
+
+/usr/include/c++/13/bits/exception_defines.h:
+
+/usr/include/c++/13/bits/atomic_lockfree_defines.h:
+
+/usr/include/x86_64-linux-gnu/asm/errno.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdlib.h:
+
+/usr/include/c++/13/bits/locale_facets.h:
+
+/usr/include/c++/13/charconv:
+
+/usr/include/c++/13/backward/binders.h:
+
+/usr/include/c++/13/bits/basic_ios.tcc:
+
+/usr/include/x86_64-linux-gnu/bits/long-double.h:
+
+/usr/include/c++/13/bits/algorithmfwd.h:
+
+/usr/include/c++/13/bits/alloc_traits.h:
+
+/usr/include/c++/13/bits/concept_check.h:
+
 /usr/include/c++/13/bits/stringfwd.h:
 
 /usr/include/c++/13/bits/iterator_concepts.h:
+
+/usr/include/c++/13/bits/allocated_ptr.h:
+
+/usr/include/c++/13/bit:
+
+/usr/include/c++/13/bits/basic_string.tcc:
 
 /usr/lib/gcc/x86_64-linux-gnu/13/include/limits.h:
 
@@ -575,6 +582,10 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/c++/13/array:
 
+/usr/include/c++/13/bits/allocator.h:
+
+/usr/include/c++/13/bits/stl_bvector.h:
+
 /usr/include/c++/13/bits/uniform_int_dist.h:
 
 /usr/include/c++/13/bits/locale_classes.tcc:
@@ -585,23 +596,55 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/pthread.h:
 
+/usr/include/wchar.h:
+
+/usr/include/c++/13/bits/shared_ptr_base.h:
+
+/usr/include/c++/13/bits/basic_ios.h:
+
+/usr/include/x86_64-linux-gnu/bits/time64.h:
+
+/home/james/1_Code/03_SubEclipse/include/subeclipse/roi.h:
+
+/usr/include/c++/13/bits/cxxabi_forced.h:
+
+/usr/include/c++/13/bits/stl_algobase.h:
+
+/usr/include/c++/13/atomic:
+
+/usr/include/c++/13/bits/basic_string.h:
+
+/usr/include/libintl.h:
+
+/usr/include/c++/13/bits/chrono_io.h:
+
+/usr/include/c++/13/bits/invoke.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h:
+
+/usr/include/x86_64-linux-gnu/bits/environments.h:
+
 /usr/include/x86_64-linux-gnu/sys/select.h:
 
 /usr/include/c++/13/cwchar:
+
+/usr/include/alloca.h:
 
 /usr/include/x86_64-linux-gnu/bits/endianness.h:
 
 /usr/include/c++/13/bits/chrono.h:
 
+/usr/include/X11/X.h:
+
 /usr/include/x86_64-linux-gnu/c++/13/bits/ctype_inline.h:
 
 /usr/include/c++/13/bits/char_traits.h:
 
+/usr/include/X11/keysymdef.h:
+
 /usr/lib/gcc/x86_64-linux-gnu/13/include/syslimits.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/clock_t.h:
-
-/usr/include/X11/X.h:
 
 /usr/include/c++/13/bits/exception_ptr.h:
 
@@ -627,10 +670,6 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/x86_64-linux-gnu/bits/types.h:
 
-/usr/include/c++/13/bits/move.h:
-
-/usr/include/c++/13/bits/cxxabi_forced.h:
-
 /usr/include/c++/13/bits/exception.h:
 
 /usr/include/c++/13/bits/memory_resource.h:
@@ -639,7 +678,7 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/x86_64-linux-gnu/bits/stdlib-float.h:
 
-/usr/include/x86_64-linux-gnu/bits/uintn-identity.h:
+/usr/include/x86_64-linux-gnu/bits/select-decl.h:
 
 /home/james/1_Code/03_SubEclipse/include/subeclipse/config.h:
 
@@ -663,13 +702,23 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/c++/13/bits/locale_facets_nonio.tcc:
 
-/usr/include/c++/13/bits/invoke.h:
+/usr/include/c++/13/exception:
 
-/usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h:
+/usr/include/c++/13/bits/stl_pair.h:
 
-/usr/include/x86_64-linux-gnu/bits/environments.h:
+/usr/include/x86_64-linux-gnu/bits/errno.h:
 
-/usr/include/c++/13/bits/memoryfwd.h:
+/usr/include/c++/13/ext/aligned_buffer.h:
+
+/usr/include/locale.h:
+
+/usr/include/c++/13/bits/utility.h:
+
+/usr/include/x86_64-linux-gnu/bits/pthreadtypes-arch.h:
+
+/usr/include/c++/13/ext/alloc_traits.h:
+
+/usr/include/c++/13/new:
 
 /usr/include/c++/13/ext/concurrence.h:
 
@@ -680,6 +729,8 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 /usr/include/c++/13/ext/numeric_traits.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h:
+
+/usr/include/X11/keysym.h:
 
 /usr/include/c++/13/ext/string_conversions.h:
 
@@ -704,6 +755,10 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 /usr/include/c++/13/ios:
 
 /usr/include/c++/13/istream:
+
+/usr/include/x86_64-linux-gnu/bits/types/wint_t.h:
+
+/usr/include/c++/13/limits:
 
 /usr/include/c++/13/pstl/pstl_config.h:
 
@@ -773,10 +828,6 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/x86_64-linux-gnu/bits/floatn-common.h:
 
-/usr/include/c++/13/limits:
-
-/usr/include/x86_64-linux-gnu/bits/types/wint_t.h:
-
 /usr/include/x86_64-linux-gnu/bits/getopt_core.h:
 
 /usr/include/x86_64-linux-gnu/bits/local_lim.h:
@@ -784,8 +835,6 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 /usr/include/c++/13/sstream:
 
 /usr/include/x86_64-linux-gnu/bits/types/cookie_io_functions_t.h:
-
-/usr/include/x86_64-linux-gnu/bits/wchar.h:
 
 /usr/include/x86_64-linux-gnu/bits/locale.h:
 
@@ -797,15 +846,27 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/x86_64-linux-gnu/bits/sched.h:
 
+/usr/include/x86_64-linux-gnu/bits/select2.h:
+
 /usr/include/x86_64-linux-gnu/bits/semaphore.h:
 
-/usr/include/x86_64-linux-gnu/bits/getopt_posix.h:
-
 /usr/include/time.h:
+
+/usr/include/x86_64-linux-gnu/bits/getopt_posix.h:
 
 /usr/include/x86_64-linux-gnu/bits/setjmp.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdio.h:
+
+/usr/include/c++/13/bits/ptr_traits.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdio2-decl.h:
+
+/usr/include/c++/13/bits/quoted_string.h:
+
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/FILE.h:
 
@@ -837,26 +898,10 @@ CMakeFiles/subeclipse.dir/src/main.cpp.o: /home/james/1_Code/03_SubEclipse/src/m
 
 /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h:
 
+/usr/include/x86_64-linux-gnu/bits/stdlib-bsearch.h:
+
 /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/error_t.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/locale_t.h:
-
-/usr/include/c++/13/ext/atomicity.h:
-
-/usr/include/x86_64-linux-gnu/bits/types/struct_tm.h:
-
-/usr/include/x86_64-linux-gnu/bits/types/time_t.h:
-
-/usr/include/x86_64-linux-gnu/bits/types/timer_t.h:
-
-/usr/include/x86_64-linux-gnu/bits/typesizes.h:
-
-/usr/include/x86_64-linux-gnu/bits/uio_lim.h:
-
-/usr/include/x86_64-linux-gnu/bits/unistd_ext.h:
-
-/usr/include/c++/13/bits/exception_defines.h:
-
-/usr/include/x86_64-linux-gnu/bits/waitstatus.h:

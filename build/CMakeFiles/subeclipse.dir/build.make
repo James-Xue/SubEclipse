@@ -94,6 +94,8 @@ subeclipse: CMakeFiles/subeclipse.dir/src/main.cpp.o
 subeclipse: CMakeFiles/subeclipse.dir/build.make
 subeclipse: libsubeclipse_core.a
 subeclipse: /usr/lib/x86_64-linux-gnu/libX11.so
+subeclipse: /usr/lib/x86_64-linux-gnu/libXext.so
+subeclipse: /usr/lib/x86_64-linux-gnu/libXfixes.so
 subeclipse: CMakeFiles/subeclipse.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/james/1_Code/03_SubEclipse/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable subeclipse"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/subeclipse.dir/link.txt --verbose=$(VERBOSE)

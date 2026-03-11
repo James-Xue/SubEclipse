@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/home/james/1_Code/03_SubEclipse/include
 
-CXX_FLAGS = -std=c++20
+CXX_FLAGS = -O3 -DNDEBUG -std=c++20
 

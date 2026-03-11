@@ -97,19 +97,51 @@ CMakeFiles/subeclipse_core.dir/src/app/config.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/subeclipse_core.dir/src/app/config.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/james/1_Code/03_SubEclipse/src/app/config.cpp -o CMakeFiles/subeclipse_core.dir/src/app/config.cpp.s
 
+CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.o: CMakeFiles/subeclipse_core.dir/flags.make
+CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.o: /home/james/1_Code/03_SubEclipse/src/render/roi.cpp
+CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.o: CMakeFiles/subeclipse_core.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/james/1_Code/03_SubEclipse/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.o -MF CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.o.d -o CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.o -c /home/james/1_Code/03_SubEclipse/src/render/roi.cpp
+
+CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/james/1_Code/03_SubEclipse/src/render/roi.cpp > CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.i
+
+CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/james/1_Code/03_SubEclipse/src/render/roi.cpp -o CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.s
+
+CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.o: CMakeFiles/subeclipse_core.dir/flags.make
+CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.o: /home/james/1_Code/03_SubEclipse/src/platform/x11/overlay_window.cpp
+CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.o: CMakeFiles/subeclipse_core.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/james/1_Code/03_SubEclipse/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.o -MF CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.o.d -o CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.o -c /home/james/1_Code/03_SubEclipse/src/platform/x11/overlay_window.cpp
+
+CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/james/1_Code/03_SubEclipse/src/platform/x11/overlay_window.cpp > CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.i
+
+CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/james/1_Code/03_SubEclipse/src/platform/x11/overlay_window.cpp -o CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.s
+
 # Object files for target subeclipse_core
 subeclipse_core_OBJECTS = \
 "CMakeFiles/subeclipse_core.dir/src/app/logger.cpp.o" \
-"CMakeFiles/subeclipse_core.dir/src/app/config.cpp.o"
+"CMakeFiles/subeclipse_core.dir/src/app/config.cpp.o" \
+"CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.o" \
+"CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.o"
 
 # External object files for target subeclipse_core
 subeclipse_core_EXTERNAL_OBJECTS =
 
 libsubeclipse_core.a: CMakeFiles/subeclipse_core.dir/src/app/logger.cpp.o
 libsubeclipse_core.a: CMakeFiles/subeclipse_core.dir/src/app/config.cpp.o
+libsubeclipse_core.a: CMakeFiles/subeclipse_core.dir/src/render/roi.cpp.o
+libsubeclipse_core.a: CMakeFiles/subeclipse_core.dir/src/platform/x11/overlay_window.cpp.o
 libsubeclipse_core.a: CMakeFiles/subeclipse_core.dir/build.make
 libsubeclipse_core.a: CMakeFiles/subeclipse_core.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/james/1_Code/03_SubEclipse/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX static library libsubeclipse_core.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/james/1_Code/03_SubEclipse/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX static library libsubeclipse_core.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/subeclipse_core.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/subeclipse_core.dir/link.txt --verbose=$(VERBOSE)
 
