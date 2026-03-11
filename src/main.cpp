@@ -8,6 +8,149 @@
 #include <chrono>
 #include <thread>
 
+namespace
+{
+    /*
+     * 进入编辑模式：关闭穿透并请求重绘。
+     * 该函数仅封装状态切换，不引入额外语义。
+     */
+    void enter_edit_mode(subeclipse::OverlayWindow &overlay, bool &running, bool &need_redraw)
+    {
+        running = false;
+        overlay.set_click_through(false);
+        need_redraw = true;
+    }
+
+    /*
+     * 尝试进入运行模式。
+     * ROI 为空时保持原状态并记录告警，返回 false。
+     */
+    bool enter_running_mode(subeclipse::OverlayWindow &overlay,
+                            const subeclipse::RoiEditor &roi,
+                            bool &running,
+                            bool &need_redraw)
+    {
+        if (!roi.has_roi())
+        {
+            subeclipse::Logger::warn("Cannot start: ROI is empty, please draw ROI first");
+            return false;
+        }
+
+        running = true;
+        overlay.set_click_through(true);
+        need_redraw = true;
+        return true;
+    }
+
+    /*
+     * 处理鼠标事件。
+     * 仅在编辑模式生效，运行模式保持 click-through 语义。
+     */
+    void handle_mouse_event(const subeclipse::OverlayEvent &event,
+                            bool running,
+                            subeclipse::OverlayWindow &overlay,
+                            subeclipse::RoiEditor &roi,
+                            bool &need_redraw)
+    {
+        if (running)
+        {
+            return;
+        }
+
+        switch (event.type)
+        {
+        case subeclipse::OverlayEvent::Type::MousePress:
+            roi.on_mouse_press(event.x, event.y, overlay.width(), overlay.height());
+            need_redraw = true;
+            break;
+        case subeclipse::OverlayEvent::Type::MouseMove:
+            roi.on_mouse_move(event.x, event.y, overlay.width(), overlay.height());
+            need_redraw = true;
+            break;
+        case subeclipse::OverlayEvent::Type::MouseRelease:
+            roi.on_mouse_release(overlay.width(), overlay.height());
+            need_redraw = true;
+            break;
+        default:
+            break;
+        }
+    }
+
+    /*
+     * 处理按键事件。
+     * 保持现有快捷键语义：Q/Esc 退出，Space 切换运行态，R 重选 ROI。
+     */
+    void handle_key_event(const subeclipse::OverlayEvent &event,
+                          subeclipse::OverlayWindow &overlay,
+                          subeclipse::RoiEditor &roi,
+                          bool &running,
+                          bool &need_redraw,
+                          bool &should_exit)
+    {
+        if (event.keysym == XK_q || event.keysym == XK_Q || event.keysym == XK_Escape)
+        {
+            should_exit = true;
+            return;
+        }
+
+        if (event.keysym == XK_space)
+        {
+            if (running)
+            {
+                enter_edit_mode(overlay, running, need_redraw);
+                subeclipse::Logger::info("Paused: edit mode");
+            }
+            else if (enter_running_mode(overlay, roi, running, need_redraw))
+            {
+                subeclipse::Logger::info("Running: click-through on");
+            }
+            return;
+        }
+
+        if (event.keysym == XK_r || event.keysym == XK_R)
+        {
+            roi.clear();
+            enter_edit_mode(overlay, running, need_redraw);
+            subeclipse::Logger::info("ROI cleared: draw new ROI");
+        }
+    }
+
+    /*
+     * 单轮事件泵：消费当前队列中的全部事件并完成状态更新。
+     * 将事件分发从 main() 中提炼，降低主循环分支深度。
+     */
+    void pump_events_once(subeclipse::OverlayWindow &overlay,
+                          subeclipse::RoiEditor &roi,
+                          bool &running,
+                          bool &need_redraw,
+                          bool &should_exit)
+    {
+        subeclipse::OverlayEvent event;
+        while (overlay.poll_event(event))
+        {
+            switch (event.type)
+            {
+            case subeclipse::OverlayEvent::Type::Close:
+                should_exit = true;
+                break;
+            case subeclipse::OverlayEvent::Type::Redraw:
+                need_redraw = true;
+                break;
+            case subeclipse::OverlayEvent::Type::MousePress:
+            case subeclipse::OverlayEvent::Type::MouseMove:
+            case subeclipse::OverlayEvent::Type::MouseRelease:
+                handle_mouse_event(event, running, overlay, roi, need_redraw);
+                break;
+            case subeclipse::OverlayEvent::Type::Key:
+                handle_key_event(event, overlay, roi, running, need_redraw, should_exit);
+                break;
+            case subeclipse::OverlayEvent::Type::Empty:
+                break;
+            }
+        }
+    }
+} // namespace
+
 /*
  * 主程序职责：
  * 1) 初始化配置与日志；
@@ -43,112 +186,16 @@ int main()
     bool need_redraw = true;
     bool should_exit = false;
 
-    /*
-     * 进入编辑模式。
-     * 为什么显式封装：避免在多个分支重复写状态切换细节，
-     * 降低遗漏 click-through 状态同步的风险。
-     */
-    auto enter_edit_mode = [&]()
-    {
-        running = false;
-        overlay.set_click_through(false);
-        need_redraw = true;
-    };
-
-    /*
-     * 进入运行模式。
-     * 关键边界：ROI 为空时禁止进入，避免“运行中但无目标区域”的无效状态。
-     */
-    auto enter_running_mode = [&]()
-    {
-        if (!roi.has_roi())
-        {
-            Logger::warn("Cannot start: ROI is empty, please draw ROI first");
-            return;
-        }
-        running = true;
-        overlay.set_click_through(true);
-        need_redraw = true;
-    };
-
-    enter_edit_mode();
+    enter_edit_mode(overlay, running, need_redraw);
     Logger::info("Controls: Space start/pause, R reselect ROI, Q/Esc quit");
 
     while (!should_exit)
     {
-        OverlayEvent event;
         /*
-         * 先快速消费当前队列中的全部事件，再按需重绘一次。
-         * 这样做可减少重复绘制，且让状态切换在同一循环内收敛。
+         * 单轮事件泵：先快速消费队列，再按需重绘一次。
+         * 这样可减少重复绘制，且让状态切换在同一循环内收敛。
          */
-        while (overlay.poll_event(event))
-        {
-            switch (event.type)
-            {
-            case OverlayEvent::Type::Close:
-                should_exit = true;
-                break;
-            case OverlayEvent::Type::Redraw:
-                need_redraw = true;
-                break;
-            case OverlayEvent::Type::MousePress:
-                /* 仅编辑模式处理鼠标，运行模式保持穿透语义。 */
-                if (!running)
-                {
-                    roi.on_mouse_press(event.x, event.y, overlay.width(), overlay.height());
-                    need_redraw = true;
-                }
-                break;
-            case OverlayEvent::Type::MouseMove:
-                /* ROI 交互是“按下后移动”的连续过程，移动事件决定动态反馈。 */
-                if (!running)
-                {
-                    roi.on_mouse_move(event.x, event.y, overlay.width(), overlay.height());
-                    need_redraw = true;
-                }
-                break;
-            case OverlayEvent::Type::MouseRelease:
-                /* 释放时收敛 ROI 几何并结束拖拽态。 */
-                if (!running)
-                {
-                    roi.on_mouse_release(overlay.width(), overlay.height());
-                    need_redraw = true;
-                }
-                break;
-            case OverlayEvent::Type::Key:
-                /* 快捷键在任意模式都生效，保障可随时退出/切换。 */
-                if (event.keysym == XK_q || event.keysym == XK_Q || event.keysym == XK_Escape)
-                {
-                    should_exit = true;
-                }
-                else if (event.keysym == XK_space)
-                {
-                    if (running)
-                    {
-                        enter_edit_mode();
-                        Logger::info("Paused: edit mode");
-                    }
-                    else
-                    {
-                        enter_running_mode();
-                        if (running)
-                        {
-                            Logger::info("Running: click-through on");
-                        }
-                    }
-                }
-                else if (event.keysym == XK_r || event.keysym == XK_R)
-                {
-                    /* 强制重选 ROI：清空后回编辑态，防止旧 ROI 残留。 */
-                    roi.clear();
-                    enter_edit_mode();
-                    Logger::info("ROI cleared: draw new ROI");
-                }
-                break;
-            case OverlayEvent::Type::Empty:
-                break;
-            }
-        }
+        pump_events_once(overlay, roi, running, need_redraw, should_exit);
 
         if (need_redraw)
         {

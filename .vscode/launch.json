@@ -18,6 +18,11 @@
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
+                },
+                {
+                    "description": "彻底关闭烦人的 debuginfod 联网下载",
+                    "text": "set debuginfod enabled off",
+                    "ignoreFailures": true
                 }
             ],
             "preLaunchTask": "Build Release"
