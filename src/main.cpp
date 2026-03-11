@@ -1,4 +1,5 @@
 #include "subeclipse/config.h"
+#include "subeclipse/capture.h"
 #include "subeclipse/logger.h"
 #include "subeclipse/overlay_window.h"
 #include "subeclipse/roi.h"
@@ -6,149 +7,152 @@
 #include <X11/keysym.h>
 
 #include <chrono>
+#include <cstdint>
+#include <memory>
+#include <sstream>
 #include <thread>
 
 namespace
 {
-    /*
-     * 进入编辑模式：关闭穿透并请求重绘。
-     * 该函数仅封装状态切换，不引入额外语义。
-     */
-    void enter_edit_mode(subeclipse::OverlayWindow &overlay, bool &running, bool &need_redraw)
+/*
+ * 进入编辑模式：关闭穿透并请求重绘。
+ * 该函数仅封装状态切换，不引入额外语义。
+ */
+void enter_edit_mode(subeclipse::OverlayWindow &overlay, bool &running, bool &need_redraw)
+{
+    running = false;
+    overlay.set_click_through(false);
+    need_redraw = true;
+}
+
+/*
+ * 尝试进入运行模式。
+ * ROI 为空时保持原状态并记录告警，返回 false。
+ */
+bool enter_running_mode(subeclipse::OverlayWindow &overlay,
+    const subeclipse::RoiEditor &roi,
+    bool &running,
+    bool &need_redraw)
+{
+    if (!roi.has_roi())
     {
-        running = false;
-        overlay.set_click_through(false);
-        need_redraw = true;
+        subeclipse::Logger::warn("Cannot start: ROI is empty, please draw ROI first");
+        return false;
     }
 
-    /*
-     * 尝试进入运行模式。
-     * ROI 为空时保持原状态并记录告警，返回 false。
-     */
-    bool enter_running_mode(subeclipse::OverlayWindow &overlay,
-                            const subeclipse::RoiEditor &roi,
-                            bool &running,
-                            bool &need_redraw)
-    {
-        if (!roi.has_roi())
-        {
-            subeclipse::Logger::warn("Cannot start: ROI is empty, please draw ROI first");
-            return false;
-        }
+    running = true;
+    overlay.set_click_through(true);
+    need_redraw = true;
+    return true;
+}
 
-        running = true;
-        overlay.set_click_through(true);
-        need_redraw = true;
-        return true;
+/*
+ * 处理鼠标事件。
+ * 仅在编辑模式生效，运行模式保持 click-through 语义。
+ */
+void handle_mouse_event(const subeclipse::OverlayEvent &event,
+    bool running,
+    subeclipse::OverlayWindow &overlay,
+    subeclipse::RoiEditor &roi,
+    bool &need_redraw)
+{
+    if (running)
+    {
+        return;
     }
 
-    /*
-     * 处理鼠标事件。
-     * 仅在编辑模式生效，运行模式保持 click-through 语义。
-     */
-    void handle_mouse_event(const subeclipse::OverlayEvent &event,
-                            bool running,
-                            subeclipse::OverlayWindow &overlay,
-                            subeclipse::RoiEditor &roi,
-                            bool &need_redraw)
+    switch (event.type)
+    {
+    case subeclipse::OverlayEvent::Type::MousePress:
+        roi.on_mouse_press(event.x, event.y, overlay.width(), overlay.height());
+        need_redraw = true;
+        break;
+    case subeclipse::OverlayEvent::Type::MouseMove:
+        roi.on_mouse_move(event.x, event.y, overlay.width(), overlay.height());
+        need_redraw = true;
+        break;
+    case subeclipse::OverlayEvent::Type::MouseRelease:
+        roi.on_mouse_release(overlay.width(), overlay.height());
+        need_redraw = true;
+        break;
+    default:
+        break;
+    }
+}
+
+/*
+ * 处理按键事件。
+ * 保持现有快捷键语义：Q/Esc 退出，Space 切换运行态，R 重选 ROI。
+ */
+void handle_key_event(const subeclipse::OverlayEvent &event,
+    subeclipse::OverlayWindow &overlay,
+    subeclipse::RoiEditor &roi,
+    bool &running,
+    bool &need_redraw,
+    bool &should_exit)
+{
+    if (event.keysym == XK_q || event.keysym == XK_Q || event.keysym == XK_Escape)
+    {
+        should_exit = true;
+        return;
+    }
+
+    if (event.keysym == XK_space)
     {
         if (running)
         {
-            return;
+            enter_edit_mode(overlay, running, need_redraw);
+            subeclipse::Logger::info("Paused: edit mode");
         }
+        else if (enter_running_mode(overlay, roi, running, need_redraw))
+        {
+            subeclipse::Logger::info("Running: click-through on");
+        }
+        return;
+    }
 
+    if (event.keysym == XK_r || event.keysym == XK_R)
+    {
+        roi.clear();
+        enter_edit_mode(overlay, running, need_redraw);
+        subeclipse::Logger::info("ROI cleared: draw new ROI");
+    }
+}
+
+/*
+ * 单轮事件泵：消费当前队列中的全部事件并完成状态更新。
+ * 将事件分发从 main() 中提炼，降低主循环分支深度。
+ */
+void pump_events_once(subeclipse::OverlayWindow &overlay,
+    subeclipse::RoiEditor &roi,
+    bool &running,
+    bool &need_redraw,
+    bool &should_exit)
+{
+    subeclipse::OverlayEvent event;
+    while (overlay.poll_event(event))
+    {
         switch (event.type)
         {
-        case subeclipse::OverlayEvent::Type::MousePress:
-            roi.on_mouse_press(event.x, event.y, overlay.width(), overlay.height());
-            need_redraw = true;
-            break;
-        case subeclipse::OverlayEvent::Type::MouseMove:
-            roi.on_mouse_move(event.x, event.y, overlay.width(), overlay.height());
-            need_redraw = true;
-            break;
-        case subeclipse::OverlayEvent::Type::MouseRelease:
-            roi.on_mouse_release(overlay.width(), overlay.height());
-            need_redraw = true;
-            break;
-        default:
-            break;
-        }
-    }
-
-    /*
-     * 处理按键事件。
-     * 保持现有快捷键语义：Q/Esc 退出，Space 切换运行态，R 重选 ROI。
-     */
-    void handle_key_event(const subeclipse::OverlayEvent &event,
-                          subeclipse::OverlayWindow &overlay,
-                          subeclipse::RoiEditor &roi,
-                          bool &running,
-                          bool &need_redraw,
-                          bool &should_exit)
-    {
-        if (event.keysym == XK_q || event.keysym == XK_Q || event.keysym == XK_Escape)
-        {
+        case subeclipse::OverlayEvent::Type::Close:
             should_exit = true;
-            return;
-        }
-
-        if (event.keysym == XK_space)
-        {
-            if (running)
-            {
-                enter_edit_mode(overlay, running, need_redraw);
-                subeclipse::Logger::info("Paused: edit mode");
-            }
-            else if (enter_running_mode(overlay, roi, running, need_redraw))
-            {
-                subeclipse::Logger::info("Running: click-through on");
-            }
-            return;
-        }
-
-        if (event.keysym == XK_r || event.keysym == XK_R)
-        {
-            roi.clear();
-            enter_edit_mode(overlay, running, need_redraw);
-            subeclipse::Logger::info("ROI cleared: draw new ROI");
+            break;
+        case subeclipse::OverlayEvent::Type::Redraw:
+            need_redraw = true;
+            break;
+        case subeclipse::OverlayEvent::Type::MousePress:
+        case subeclipse::OverlayEvent::Type::MouseMove:
+        case subeclipse::OverlayEvent::Type::MouseRelease:
+            handle_mouse_event(event, running, overlay, roi, need_redraw);
+            break;
+        case subeclipse::OverlayEvent::Type::Key:
+            handle_key_event(event, overlay, roi, running, need_redraw, should_exit);
+            break;
+        case subeclipse::OverlayEvent::Type::Empty:
+            break;
         }
     }
-
-    /*
-     * 单轮事件泵：消费当前队列中的全部事件并完成状态更新。
-     * 将事件分发从 main() 中提炼，降低主循环分支深度。
-     */
-    void pump_events_once(subeclipse::OverlayWindow &overlay,
-                          subeclipse::RoiEditor &roi,
-                          bool &running,
-                          bool &need_redraw,
-                          bool &should_exit)
-    {
-        subeclipse::OverlayEvent event;
-        while (overlay.poll_event(event))
-        {
-            switch (event.type)
-            {
-            case subeclipse::OverlayEvent::Type::Close:
-                should_exit = true;
-                break;
-            case subeclipse::OverlayEvent::Type::Redraw:
-                need_redraw = true;
-                break;
-            case subeclipse::OverlayEvent::Type::MousePress:
-            case subeclipse::OverlayEvent::Type::MouseMove:
-            case subeclipse::OverlayEvent::Type::MouseRelease:
-                handle_mouse_event(event, running, overlay, roi, need_redraw);
-                break;
-            case subeclipse::OverlayEvent::Type::Key:
-                handle_key_event(event, overlay, roi, running, need_redraw, should_exit);
-                break;
-            case subeclipse::OverlayEvent::Type::Empty:
-                break;
-            }
-        }
-    }
+}
 } // namespace
 
 /*
@@ -176,6 +180,8 @@ int main()
     }
 
     RoiEditor roi;
+    std::unique_ptr<IScreenCapture> capture = std::make_unique<X11Capture>();
+
     /*
      * 运行态含义：
      * - running = false：编辑模式（可鼠标编辑 ROI，窗口不穿透）；
@@ -185,6 +191,15 @@ int main()
     /* 延迟重绘标志：只在状态/输入变化时重绘，避免无效刷新。 */
     bool need_redraw = true;
     bool should_exit = false;
+
+    /* 抓屏验证：运行态按固定间隔抓取 ROI，并周期性输出统计。 */
+    constexpr std::int64_t kCaptureIntervalMs = 200;
+    constexpr std::int64_t kCaptureStatsIntervalMs = 2000;
+    std::int64_t last_capture_ms = 0;
+    std::int64_t last_stats_ms = 0;
+    std::uint64_t capture_attempts = 0;
+    std::uint64_t capture_success = 0;
+    Frame last_frame{};
 
     enter_edit_mode(overlay, running, need_redraw);
     Logger::info("Controls: Space start/pause, R reselect ROI, Q/Esc quit");
@@ -201,6 +216,44 @@ int main()
         {
             overlay.draw(roi);
             need_redraw = false;
+        }
+
+        if (running && roi.has_roi())
+        {
+            const auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch())
+                                 .count();
+
+            if (now - last_capture_ms >= kCaptureIntervalMs)
+            {
+                last_capture_ms = now;
+                capture->set_roi(roi.rect());
+                ++capture_attempts;
+
+                Frame frame;
+                if (capture->grab(frame))
+                {
+                    ++capture_success;
+                    last_frame = std::move(frame);
+                }
+            }
+
+            if (now - last_stats_ms >= kCaptureStatsIntervalMs)
+            {
+                last_stats_ms = now;
+
+                std::ostringstream oss;
+                oss << "Capture stats: attempts=" << capture_attempts << ", success=" << capture_success
+                    << ", failed=" << (capture_attempts - capture_success);
+
+                if (last_frame.width > 0 && last_frame.height > 0)
+                {
+                    oss << ", last_frame={ts_ms=" << last_frame.ts_ms << ", size=" << last_frame.width << "x"
+                        << last_frame.height << ", bytes=" << last_frame.bgra.size() << "}";
+                }
+
+                Logger::info(oss.str());
+            }
         }
 
         /*

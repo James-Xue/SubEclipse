@@ -13,11 +13,19 @@ add_library(subeclipse_core
     src/app/config.cpp
     src/render/roi.cpp
     src/platform/x11/overlay_window.cpp
+    src/platform/x11/x11_capture.cpp
 )
 
 target_include_directories(subeclipse_core
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include
+)
+
+target_link_libraries(subeclipse_core
+    PUBLIC
+        X11::X11
+        ${X11_Xext_LIB}
+        ${X11_Xfixes_LIB}
 )
 
 add_executable(subeclipse
@@ -27,9 +35,6 @@ add_executable(subeclipse
 target_link_libraries(subeclipse
     PRIVATE
         subeclipse_core
-        X11::X11
-    ${X11_Xext_LIB}
-    ${X11_Xfixes_LIB}
 )
 
 message(STATUS "Configured SubEclipse with C++${CMAKE_CXX_STANDARD}")
