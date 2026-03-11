@@ -5,6 +5,7 @@
 namespace subeclipse
 {
 
+    /* 清空 ROI 并重置交互状态。 */
     void RoiEditor::clear()
     {
         has_roi_ = false;
@@ -12,6 +13,11 @@ namespace subeclipse
         roi_ = RoiRect{};
     }
 
+    /*
+     * 鼠标按下时决定拖拽语义。
+     * 优先命中控制柄，其次 ROI 内移动，最后才是新建。
+     * 这是 ROI 交互一致性的关键：同一位置永远触发同一类操作。
+     */
     void RoiEditor::on_mouse_press(int x, int y, int canvas_width, int canvas_height)
     {
         press_x_ = x;
@@ -39,6 +45,12 @@ namespace subeclipse
         clamp_to_canvas(canvas_width, canvas_height);
     }
 
+    /*
+     * 鼠标移动时按状态机更新 ROI。
+     * - Creating：由锚点与当前点构造矩形；
+     * - Moving：基于按下点位移整体平移；
+     * - Resizing：固定左上角，仅扩展宽高。
+     */
     void RoiEditor::on_mouse_move(int x, int y, int canvas_width, int canvas_height)
     {
         switch (drag_mode_)
@@ -69,9 +81,15 @@ namespace subeclipse
             return;
         }
 
+        /* 每次交互更新后立刻裁剪，避免越界传播到后续计算。 */
         clamp_to_canvas(canvas_width, canvas_height);
     }
 
+    /*
+     * 鼠标释放时收敛结果。
+     * 关键边界：先裁剪，再应用最小尺寸，再次裁剪。
+     * 原因：最小尺寸扩张后可能再次触碰画布边界。
+     */
     void RoiEditor::on_mouse_release(int canvas_width, int canvas_height)
     {
         if (drag_mode_ == DragMode::None)
@@ -92,16 +110,22 @@ namespace subeclipse
         drag_mode_ = DragMode::None;
     }
 
+    /* 返回是否已有 ROI。 */
     bool RoiEditor::has_roi() const
     {
         return has_roi_;
     }
 
+    /* 返回当前 ROI。 */
     RoiRect RoiEditor::rect() const
     {
         return roi_;
     }
 
+    /*
+     * 计算右下角控制柄。
+     * 约定控制柄贴右下角，便于用户直觉地“向外拖拽放大”。
+     */
     RoiRect RoiEditor::handle_rect() const
     {
         return RoiRect{
@@ -111,15 +135,18 @@ namespace subeclipse
             kHandleSize};
     }
 
+    /* ROI 区域命中测试。 */
     bool RoiEditor::point_in_roi(int x, int y) const
     {
         if (!has_roi_)
         {
             return false;
         }
+        /* 使用闭区间命中，减少边界像素“点不中”的体验问题。 */
         return x >= roi_.x && y >= roi_.y && x <= roi_.x + roi_.width && y <= roi_.y + roi_.height;
     }
 
+    /* 控制柄命中测试。 */
     bool RoiEditor::point_in_handle(int x, int y) const
     {
         if (!has_roi_)
@@ -130,6 +157,13 @@ namespace subeclipse
         return x >= handle.x && y >= handle.y && x <= handle.x + handle.width && y <= handle.y + handle.height;
     }
 
+    /*
+     * 将 ROI 约束到画布内。
+     * 处理顺序：
+     * 1) 负宽高归零；
+     * 2) 左上角坐标钳制；
+     * 3) 若右/下越界，收缩宽高。
+     */
     void RoiEditor::clamp_to_canvas(int canvas_width, int canvas_height)
     {
         if (!has_roi_)
@@ -159,6 +193,7 @@ namespace subeclipse
         }
     }
 
+    /* 整数钳制辅助函数。 */
     int RoiEditor::clamp_int(int value, int min_value, int max_value)
     {
         return std::max(min_value, std::min(max_value, value));
