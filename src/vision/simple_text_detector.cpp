@@ -275,7 +275,7 @@ void append_detection_if_valid(std::vector<TextDetection> &out,
 {
     ++stats.candidate_count;
 
-    const int min_width = std::max(12, frame.width / 20);
+    const int min_width = std::max(12, frame.width / 35);
     if (width < min_width)
     {
         ++stats.width_reject_count;

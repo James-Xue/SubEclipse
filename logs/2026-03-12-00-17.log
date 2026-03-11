@@ -1,0 +1,13 @@
+[2026-03-12 00:17:35] [INFO] Overlay window created
+[2026-03-12 00:17:35] [INFO] Controls: Space start/pause, R reselect ROI, Q/Esc quit
+[2026-03-12 00:17:44] [INFO] CaptureVisionPipeline started
+[2026-03-12 00:17:44] [INFO] Click-through enabled (running)
+[2026-03-12 00:17:44] [INFO] Running: click-through on
+[2026-03-12 00:17:44] [INFO] X11Capture: 已启用 XShm 优先抓屏
+[2026-03-12 00:17:44] [INFO] [Detector][Summary] frame_idx=1 frame=463x58 input_threshold=0.6000 clamped_threshold=0.6000 grad_threshold=39 row_density_threshold=0.0920 row_hits_mean=148.2241 hit_rows=56/58 band_count=0 first_band_density=0.0000 active_segments=0 candidate_count=0 width_reject_count=0 score_reject_count=0 accept_count=0 final_detection_count=0 no_band_streak=1 no_detection_streak=1
+[2026-03-12 00:17:48] [INFO] [Detector][Summary] frame_idx=20 frame=463x58 input_threshold=0.6000 clamped_threshold=0.6000 grad_threshold=39 row_density_threshold=0.0920 row_hits_mean=9.6379 hit_rows=56/58 band_count=0 first_band_density=0.0000 active_segments=0 candidate_count=0 width_reject_count=0 score_reject_count=0 accept_count=0 final_detection_count=0 no_band_streak=2 no_detection_streak=2
+[2026-03-12 00:17:52] [INFO] [Detector][Summary] frame_idx=40 frame=463x58 input_threshold=0.6000 clamped_threshold=0.6000 grad_threshold=39 row_density_threshold=0.0920 row_hits_mean=9.6379 hit_rows=56/58 band_count=0 first_band_density=0.0000 active_segments=0 candidate_count=0 width_reject_count=0 score_reject_count=0 accept_count=0 final_detection_count=0 no_band_streak=5 no_detection_streak=5
+[2026-03-12 00:17:56] [INFO] [Detector][Candidate] band#0 sampled_reject: width_too_small width=1 min_width=13 x0=1 y0=49 band_h=8
+[2026-03-12 00:17:56] [INFO] [Detector][Candidate] band#0 sampled_reject: width_too_small width=9 min_width=13 x0=67 y0=49 band_h=8
+[2026-03-12 00:17:56] [INFO] [Detector][Summary] frame_idx=60 frame=463x58 input_threshold=0.6000 clamped_threshold=0.6000 grad_threshold=39 row_density_threshold=0.0920 row_hits_mean=114.0345 hit_rows=56/58 band_count=1 first_band_density=0.3864 active_segments=38 candidate_count=38 width_reject_count=37 score_reject_count=0 accept_count=1 final_detection_count=1 no_band_streak=0 no_detection_streak=0
+[1] + Done                       "/usr/bin/gdb" --interpreter=mi --tty=${DbgTerm} 0<"/tmp/Microsoft-MIEngine-In-wim2wp14.oux" 1>"/tmp/Microsoft-MIEngine-Out-tldcjet5.cgh"
