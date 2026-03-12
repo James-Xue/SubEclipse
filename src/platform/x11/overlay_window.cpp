@@ -268,26 +268,55 @@ bool OverlayWindow::poll_event(OverlayEvent &event)
 }
 
 /*
- * 执行一帧绘制。
- * 当前策略是“先清空再画 ROI”，保持输出确定性，避免残影。
+ * 执行一帧 overlay 绘制，渲染顺序固定为：
+ * 1) 清空上一帧内容；
+ * 2) 绘制文本遮挡黑框（mask_boxes）；
+ * 3) 绘制 ROI 编辑可视元素（边框与拖拽手柄）；
+ * 4) 统一 flush 到 X server。
+ *
+ * 这样做的目的：
+ * - 避免上一帧残影导致视觉错误；
+ * - 保证遮挡层与 ROI 辅助线层次稳定；
+ * - 将一次绘制中的 X11 请求集中提交，减少闪烁风险。
  */
 void OverlayWindow::draw(const RoiEditor &roi, const std::vector<RoiRect> &mask_boxes)
 {
+    /*
+     * 早退保护：窗口已销毁或 display 失效时，不允许继续发起 X11 调用。
+     * 否则可能出现 BadDrawable/BadWindow 类错误。
+     */
     if (!is_valid())
     {
         return;
     }
 
+    /*
+     * 先清空整个窗口内容，确保本帧输出不依赖历史状态。
+     * 如果不先清空，上一帧的黑框和 ROI 线条可能叠加残留。
+     */
     XClearWindow(display_, window_);
 
+    /*
+     * 绘制黑框遮挡层：mask_boxes 坐标系约定为 overlay 窗口坐标。
+     * 每个 box 表示一个需要被不透明黑色覆盖的像素矩形区域。
+     */
     for (const RoiRect &box : mask_boxes)
     {
+        /*
+         * 防御式过滤无效矩形，避免传递 0/负尺寸到 XFillRectangle。
+         * 此处与上游过滤形成双保险，保证渲染阶段健壮性。
+         */
         if (box.width <= 0 || box.height <= 0)
         {
             continue;
         }
 
-        /* mask_boxes 约定为 overlay 窗口坐标，直接按像素填充黑框。 */
+        /*
+         * 参数语义：
+         * - gc_bg_：黑色画刷（create() 中设置为 0xFF000000）；
+         * - box.x/box.y：矩形左上角像素坐标；
+         * - width/height：矩形尺寸（转换为 X11 所需的 unsigned）。
+         */
         XFillRectangle(display_,
             window_,
             gc_bg_,
@@ -297,8 +326,13 @@ void OverlayWindow::draw(const RoiEditor &roi, const std::vector<RoiRect> &mask_
             static_cast<unsigned int>(box.height));
     }
 
+    /*
+     * ROI 可视层：仅在 ROI 存在时绘制。
+     * 注意顺序：先画边框，再画手柄，让手柄覆盖在边框之上更易识别和拖拽。
+     */
     if (roi.has_roi())
     {
+        /* 绘制 ROI 外轮廓（空心红框）。 */
         const RoiRect rect = roi.rect();
         XDrawRectangle(display_,
             window_,
@@ -308,6 +342,7 @@ void OverlayWindow::draw(const RoiEditor &roi, const std::vector<RoiRect> &mask_
             static_cast<unsigned int>(rect.width),
             static_cast<unsigned int>(rect.height));
 
+        /* 绘制缩放手柄（实心红块），用于交互式调节 ROI 大小。 */
         const RoiRect handle = roi.handle_rect();
         XFillRectangle(display_,
             window_,
@@ -318,6 +353,10 @@ void OverlayWindow::draw(const RoiEditor &roi, const std::vector<RoiRect> &mask_
             static_cast<unsigned int>(handle.height));
     }
 
+    /*
+     * 将本帧积累的请求推送到 X server，确保当前帧尽快可见。
+     * 统一在函数末尾 flush，避免中途多次 flush 造成额外开销。
+     */
     XFlush(display_);
 }
 
