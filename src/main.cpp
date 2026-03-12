@@ -245,6 +245,7 @@ int main()
                         continue;
                     }
 
+                    /* 检测框是 ROI 局部坐标，这里平移回 overlay 窗口坐标后再绘制。 */
                     latest_boxes.push_back(RoiRect{
                         roi_rect.x + det.rect.x,
                         roi_rect.y + det.rect.y,
@@ -253,6 +254,7 @@ int main()
                     });
                 }
 
+                /* 用最新批次整包替换，避免跨帧残留旧框。 */
                 mask_boxes = std::move(latest_boxes);
                 need_redraw = true;
             }

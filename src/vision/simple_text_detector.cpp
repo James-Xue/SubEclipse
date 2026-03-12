@@ -190,8 +190,10 @@ DetectorParams make_detector_params(const Frame &frame, float threshold)
 {
     const float t = std::clamp(threshold, 0.0F, 1.0F);
     DetectorParams params;
+    /* t 越小越保守：会抬高梯度门限并提高行密度要求。 */
     params.grad_threshold = 24 + static_cast<int>((1.0F - t) * 40.0F);
     params.row_density_threshold = 0.06F + (1.0F - t) * 0.08F;
+    /* band 高度按画面尺寸自适应，避免固定阈值在不同分辨率下失真。 */
     params.min_band_height = std::max(8, frame.height / 40);
     params.max_band_height = std::max(params.min_band_height + 1, (frame.height * 2) / 3);
     return params;
@@ -376,6 +378,7 @@ void process_band(const Frame &frame,
     std::vector<std::pair<int, int>> merged_segments;
     if (!raw_segments.empty())
     {
+        /* 将间隔很小的列段合并，降低字间空隙造成的过分碎片化。 */
         const int merge_gap = std::max(2, band_h / 6);
         int cur_start = raw_segments.front().first;
         int cur_end = raw_segments.front().second;

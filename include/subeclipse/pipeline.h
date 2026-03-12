@@ -33,6 +33,7 @@ template <typename T> class SpscBlockingQueue
     bool push(T value)
     {
         std::unique_lock<std::mutex> lock(mutex_);
+        /* 队列满时阻塞；若收到 stop 信号则立刻放弃写入。 */
         not_full_cv_.wait(lock, [this]() { return stopped_ || queue_.size() < capacity_; });
         if (stopped_)
         {
@@ -46,9 +47,11 @@ template <typename T> class SpscBlockingQueue
     bool pop(T &value)
     {
         std::unique_lock<std::mutex> lock(mutex_);
+        /* 队列空时阻塞；stop 后允许快速退出消费者线程。 */
         not_empty_cv_.wait(lock, [this]() { return stopped_ || !queue_.empty(); });
         if (queue_.empty())
         {
+            /* stopped 且无数据时返回 false，避免线程悬挂等待。 */
             return false;
         }
         value = std::move(queue_.front());
@@ -69,6 +72,7 @@ template <typename T> class SpscBlockingQueue
     {
         std::lock_guard<std::mutex> lock(mutex_);
         stopped_ = false;
+        /* 启动新一轮前清空残留帧，避免旧数据串入新会话。 */
         std::queue<T> empty;
         queue_.swap(empty);
         not_empty_cv_.notify_all();

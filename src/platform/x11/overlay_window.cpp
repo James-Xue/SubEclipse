@@ -287,6 +287,7 @@ void OverlayWindow::draw(const RoiEditor &roi, const std::vector<RoiRect> &mask_
             continue;
         }
 
+        /* mask_boxes 约定为 overlay 窗口坐标，直接按像素填充黑框。 */
         XFillRectangle(display_,
             window_,
             gc_bg_,
