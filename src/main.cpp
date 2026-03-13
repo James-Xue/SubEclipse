@@ -210,6 +210,9 @@ int main()
     bool need_redraw = true;
     bool should_exit = false;
     std::vector<RoiRect> mask_boxes;
+    /* 抗闪烁：连续空检测帧计数，达到阈值后才清空遮挡框。 */
+    int empty_detection_frames = 0;
+    constexpr int kMaxEmptyDetectionFrames = 3;
 
     if (config.mask_style != "black_box")
     {
@@ -254,10 +257,32 @@ int main()
                     });
                 }
 
-                /* 用最新批次整包替换，避免跨帧残留旧框。 */
-                mask_boxes = std::move(latest_boxes);
-                need_redraw = true;
+                if (!latest_boxes.empty())
+                {
+                    /* 非空结果立即生效，并清零空帧计数。 */
+                    mask_boxes = std::move(latest_boxes);
+                    empty_detection_frames = 0;
+                    need_redraw = true;
+                }
+                else
+                {
+                    /* 抗闪烁：单帧漏检不清空，连续 N 帧空结果后再清空。 */
+                    ++empty_detection_frames;
+                    if (empty_detection_frames >= kMaxEmptyDetectionFrames)
+                    {
+                        if (!mask_boxes.empty())
+                        {
+                            mask_boxes.clear();
+                            need_redraw = true;
+                        }
+                    }
+                }
             }
+        }
+        else
+        {
+            /* 切回编辑态时重置，避免下次运行时沿用旧计数。 */
+            empty_detection_frames = 0;
         }
 
         if (need_redraw)
