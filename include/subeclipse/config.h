@@ -24,6 +24,8 @@ struct AppConfig
     float detect_threshold = 0.6F;
     /* 抓屏帧率（FPS），用于控制管线采样频率。 */
     int capture_fps = 5;
+    /* 抗闪烁空帧阈值：连续空检测达到该帧数后清空遮挡。 */
+    int empty_detection_clear_frames = 3;
     /* 遮挡样式（当前支持 black_box）。 */
     std::string mask_style = "black_box";
 };

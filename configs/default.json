@@ -5,5 +5,6 @@
     "window_show_ms": 1200,
     "detect_threshold": 0.6,
     "capture_fps": 5,
+    "empty_detection_clear_frames": 3,
     "mask_style": "black_box"
 }

@@ -212,7 +212,8 @@ int main()
     std::vector<RoiRect> mask_boxes;
     /* 抗闪烁：连续空检测帧计数，达到阈值后才清空遮挡框。 */
     int empty_detection_frames = 0;
-    constexpr int kMaxEmptyDetectionFrames = 3;
+    /* 可配置的抗闪烁空帧阈值，默认 3（见 AppConfig）。 */
+    const int max_empty_detection_frames = config.empty_detection_clear_frames;
 
     if (config.mask_style != "black_box")
     {
@@ -268,7 +269,7 @@ int main()
                 {
                     /* 抗闪烁：单帧漏检不清空，连续 N 帧空结果后再清空。 */
                     ++empty_detection_frames;
-                    if (empty_detection_frames >= kMaxEmptyDetectionFrames)
+                    if (empty_detection_frames >= max_empty_detection_frames)
                     {
                         if (!mask_boxes.empty())
                         {

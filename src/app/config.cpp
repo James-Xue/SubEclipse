@@ -94,6 +94,7 @@ AppConfig load_config(const std::string &path)
     parse_int_field(text, "window_show_ms", config.window_show_ms);
     parse_float_field(text, "detect_threshold", config.detect_threshold);
     parse_int_field(text, "capture_fps", config.capture_fps);
+    parse_int_field(text, "empty_detection_clear_frames", config.empty_detection_clear_frames);
     parse_string_field(text, "mask_style", config.mask_style);
 
     /* 宽高必须为正值，否则回落到可见且常用的默认分辨率。 */
@@ -121,6 +122,10 @@ AppConfig load_config(const std::string &path)
     if (config.capture_fps <= 0)
     {
         config.capture_fps = 5;
+    }
+    if (config.empty_detection_clear_frames <= 0)
+    {
+        config.empty_detection_clear_frames = 3;
     }
     if (config.mask_style.empty())
     {
